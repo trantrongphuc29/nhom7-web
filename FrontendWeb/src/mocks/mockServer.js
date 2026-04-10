@@ -10,6 +10,7 @@ const db = {
   adminCustomers: structuredClone(mockData.adminCustomers),
   users: structuredClone(mockData.users),
   dashboard: structuredClone(mockData.dashboard),
+  vouchers: structuredClone(mockData.vouchers || []),
 };
 
 function jsonResponse(body, status = 200) {

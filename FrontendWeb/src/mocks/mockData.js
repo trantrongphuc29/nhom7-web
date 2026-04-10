@@ -215,6 +215,35 @@ const dashboard = {
   },
 };
 
+const vouchers = [
+  {
+    id: 3001,
+    code: "GIAM10",
+    discountType: "percent",
+    discountValue: 10,
+    minOrderValue: 5000000,
+    maxDiscountAmount: 1000000,
+    usageLimit: 200,
+    usedCount: 32,
+    startsAt: new Date(now - 7 * 86400000).toISOString(),
+    endsAt: new Date(now + 30 * 86400000).toISOString(),
+    isActive: true,
+  },
+  {
+    id: 3002,
+    code: "FREESHIP50K",
+    discountType: "fixed",
+    discountValue: 50000,
+    minOrderValue: 1500000,
+    maxDiscountAmount: null,
+    usageLimit: 0,
+    usedCount: 12,
+    startsAt: new Date(now - 3 * 86400000).toISOString(),
+    endsAt: new Date(now + 60 * 86400000).toISOString(),
+    isActive: true,
+  },
+];
+
 export const mockData = {
   adminUser,
   user,
@@ -226,4 +255,5 @@ export const mockData = {
   adminCustomers,
   users,
   dashboard,
+  vouchers,
 };
