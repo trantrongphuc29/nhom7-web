@@ -14,8 +14,6 @@ Pham vi tai lieu: Backend (`BackendWeb`)
   - `feature/orders-vouchers`
 - Tao Pull Request vao `develop`, review cheo truoc khi merge.
 
----
-
 ## Phan cong theo 5 thanh vien
 
 > Ban co the thay `Thanh vien 1..5` bang ten that cua tung nguoi.

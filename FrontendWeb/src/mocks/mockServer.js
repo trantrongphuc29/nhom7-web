@@ -314,6 +314,7 @@ async function handleMockRequest(input, init = {}) {
 export function setupMockServer() {
   if (typeof window === "undefined") return;
   if (window.__lapstoreMockServerInstalled) return;
+  window.__lapstoreMockRequest = handleMockRequest;
   const originalFetch = window.fetch.bind(window);
   window.fetch = async (input, init) => {
     const mocked = await handleMockRequest(input, init || {});
