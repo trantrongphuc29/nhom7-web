@@ -140,7 +140,7 @@ const ProductCard = ({ product }) => {
                 disabled={!hasPrice}
                 className="rounded-lg border border-slate-300 px-2 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Thêm vào giỏ hànggg
+                Thêm vào giỏ hàng
               </button>
               <button
                 type="button"
