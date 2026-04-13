@@ -200,15 +200,17 @@ CREATE TABLE IF NOT EXISTS order_status_events (
 -- Nếu muốn nạp lại dữ liệu mẫu, chạy riêng đoạn dưới.
 
 SET FOREIGN_KEY_CHECKS = 0;
-TRUNCATE TABLE order_status_events;
-TRUNCATE TABLE order_items;
-TRUNCATE TABLE orders;
-TRUNCATE TABLE product_specs;
-TRUNCATE TABLE product_images;
-TRUNCATE TABLE products;
-TRUNCATE TABLE user_addresses;
-TRUNCATE TABLE vouchers;
-TRUNCATE TABLE users;
+
+DELETE FROM order_status_events;
+DELETE FROM order_items;
+DELETE FROM orders;
+DELETE FROM product_specs;
+DELETE FROM product_images;
+DELETE FROM products;
+DELETE FROM user_addresses;
+DELETE FROM vouchers;
+DELETE FROM users;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 INSERT INTO users (id, email, password_hash, full_name, phone, role, status, loyalty_points) VALUES
