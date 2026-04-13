@@ -1,7 +1,10 @@
 import axios from "axios";
 import { notifyUnauthorizedSession } from "../utils/authSession";
 
-const http = axios.create();
+// Thêm cấu hình baseURL vào đây
+const http = axios.create({
+  baseURL: "http://127.0.0.1:8000", 
+});
 
 function toFetchLikeResponse(response) {
   return {
@@ -17,6 +20,12 @@ function normalizeMessage(error) {
 }
 
 async function requestViaMockServer(url, options = {}) {
+  // 🛑 BỘ LỌC THÔNG MINH: Chỉ tắt Mock đối với các API bạn đã làm xong ở Backend
+  if (url.includes('/api/v1/auth') || url.includes('/api/v1/account')) {
+    return null; // Bỏ qua Mock, chạy thẳng xuống Laravel
+  }
+
+  // 👇 GIỮ NGUYÊN CODE CŨ TỪ ĐÂY ĐỂ TRANG SẢN PHẨM KHÔNG BỊ SẬP GIAO DIỆN
   if (typeof window === "undefined") return null;
   const mockRequest = window.__lapstoreMockRequest;
   if (typeof mockRequest !== "function") return null;

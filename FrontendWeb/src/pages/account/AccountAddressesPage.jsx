@@ -2,36 +2,24 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { mockData } from '../../mocks/mockData';
+import { getJson, postJson, patchJson, deleteJson } from '../../services/apiClient';
 
 const emptyForm = {
-  recipientName: '',
-  phone: '',
-  line1: '',
-  line2: '',
-  ward: '',
-  district: '',
-  isDefault: false,
+  recipientName: '', phone: '', line1: '', line2: '', ward: '', district: '', isDefault: false,
 };
 
-const inputClass =
-  'w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#CCFF00]/80 focus:border-[#CCFF00]';
-
+const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#CCFF00]/80 focus:border-[#CCFF00]';
 const labelClass = 'block text-sm font-medium text-slate-800 mb-1.5';
 
 function getScrollbarWidth() {
   if (typeof window === 'undefined') return 0;
   return Math.max(0, window.innerWidth - document.documentElement.clientWidth);
 }
-
 function lockBodyScroll() {
   const w = getScrollbarWidth();
   document.body.style.overflow = 'hidden';
-  if (w > 0) {
-    document.body.style.paddingRight = `${w}px`;
-  }
+  if (w > 0) document.body.style.paddingRight = `${w}px`;
 }
-
 function unlockBodyScroll() {
   document.body.style.overflow = '';
   document.body.style.paddingRight = '';
@@ -45,19 +33,29 @@ export default function AccountAddressesPage() {
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [profilePrefill, setProfilePrefill] = useState({ recipientName: '', phone: '' });
 
-  const load = useCallback(async () => {
+const load = useCallback(async () => {
     if (!token) return;
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    const rows = mockData.accountAddresses;
-    setList(Array.isArray(rows) ? rows : []);
-  }, [token]);
+    try {
+      // Gọi API thật từ Laravel
+      const response = await getJson('/api/v1/account/addresses', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Lấy dữ liệu mảng từ backend
+      const realData = response.data?.data || response.data;
+      setList(Array.isArray(realData) ? realData : []);
+    } catch (e) {
+      toastError('Không thể tải danh sách địa chỉ');
+    }
+  }, [token, toastError]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      if (!token) return;
+      if (!token) {
+        setLoading(false);
+        return;
+      }
       try {
         await load();
       } catch (e) {
@@ -66,35 +64,8 @@ export default function AccountAddressesPage() {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, [token, toastError, load]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!token) return;
-      try {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        if (cancelled) return;
-        const p = mockData.accountProfile || {};
-        setProfilePrefill({
-          recipientName: p?.fullName?.trim?.() || '',
-          phone: p?.phone?.trim?.() || '',
-        });
-      } catch {
-        if (cancelled) return;
-        setProfilePrefill({
-          recipientName: user?.fullName?.trim?.() || '',
-          phone: user?.phone?.trim?.() || '',
-        });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [token, user]);
+    return () => { cancelled = true; };
+  }, [token, load, toastError]);
 
   const onChange = (ev) => {
     const { name, value, type, checked } = ev.target;
@@ -105,8 +76,8 @@ export default function AccountAddressesPage() {
     setEditingId(null);
     setForm({
       ...emptyForm,
-      recipientName: profilePrefill.recipientName || user?.fullName || '',
-      phone: profilePrefill.phone || user?.phone || '',
+      recipientName: user?.fullName || user?.full_name || '',
+      phone: user?.phone || '',
     });
     setModalOpen(true);
   };
@@ -114,13 +85,13 @@ export default function AccountAddressesPage() {
   const openEditModal = (row) => {
     setEditingId(row.id);
     setForm({
-      recipientName: row.recipientName || '',
+      recipientName: row.recipient_name || row.recipientName || '',
       phone: row.phone || '',
       line1: row.line1 || '',
       line2: row.line2 || '',
       ward: row.ward || '',
       district: row.district || '',
-      isDefault: Boolean(row.isDefault),
+      isDefault: Boolean(row.is_default || row.isDefault),
     });
     setModalOpen(true);
   };
@@ -133,9 +104,7 @@ export default function AccountAddressesPage() {
 
   useEffect(() => {
     if (!modalOpen) return undefined;
-    const onKey = (e) => {
-      if (e.key === 'Escape') closeModal();
-    };
+    const onKey = (e) => { if (e.key === 'Escape') closeModal(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [modalOpen, closeModal]);
@@ -151,25 +120,26 @@ export default function AccountAddressesPage() {
     if (!token) return;
     try {
       const body = {
-        ...form,
-        recipientName: form.recipientName.trim(),
+        recipient_name: form.recipientName.trim(),
         phone: form.phone.trim(),
         line1: form.line1.trim(),
-        line2: form.line2?.trim() || '',
-        ward: form.ward?.trim() || '',
-        district: form.district?.trim() || '',
+        province: "Hà Nội",
+        is_default: form.isDefault
       };
+
       if (editingId) {
-        setList((prev) => prev.map((row) => (row.id === editingId ? { ...row, ...body, id: editingId } : body.isDefault ? { ...row, isDefault: false } : row)));
+        await patchJson(`http://127.0.0.1:8000/api/v1/account/addresses/${editingId}`, body, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         toastSuccess('Đã cập nhật địa chỉ');
       } else {
-        const id = Date.now();
-        setList((prev) => [
-          { ...body, id },
-          ...prev.map((row) => (body.isDefault ? { ...row, isDefault: false } : row)),
-        ]);
+        await postJson('http://127.0.0.1:8000/api/v1/account/addresses', body, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         toastSuccess('Đã thêm địa chỉ');
       }
+      
+      load();
       closeModal();
     } catch (err) {
       toastError(err.message || 'Thao tác thất bại');
@@ -179,6 +149,9 @@ export default function AccountAddressesPage() {
   const onDelete = async (id) => {
     if (!token || !window.confirm('Xóa địa chỉ này?')) return;
     try {
+      await deleteJson(`http://127.0.0.1:8000/api/v1/account/addresses/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setList((prev) => prev.filter((row) => row.id !== id));
       toastSuccess('Đã xóa');
     } catch (err) {
@@ -186,9 +159,7 @@ export default function AccountAddressesPage() {
     }
   };
 
-  if (loading) {
-    return <p className="text-slate-500 text-sm">Đang tải…</p>;
-  }
+  if (loading) return <p className="text-slate-500 text-sm">Đang tải…</p>;
 
   const count = list.length;
 
@@ -196,159 +167,80 @@ export default function AccountAddressesPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-slate-900">Sổ địa chỉ</h2>
-        <p className="text-sm text-slate-500 mt-1">
-          {count} địa chỉ được lưu
-        </p>
+        <p className="text-sm text-slate-500 mt-1">{count} địa chỉ được lưu</p>
       </div>
 
       {count > 0 ? (
         <div className="grid gap-4 md:grid-cols-2">
           {list.map((a) => (
-            <div
-              key={a.id}
-              className="rounded-xl border border-slate-100 bg-slate-50/80 p-4 flex flex-col gap-2"
-            >
+            <div key={a.id} className="rounded-xl border border-slate-100 bg-slate-50/80 p-4 flex flex-col gap-2">
               <div className="flex justify-between items-start gap-2">
                 <div>
-                  <p className="font-semibold text-slate-900">{a.recipientName}</p>
+                  <p className="font-semibold text-slate-900">{a.recipient_name || a.recipientName}</p>
                   <p className="text-sm text-slate-600">{a.phone}</p>
                 </div>
-                {a.isDefault ? (
+                {a.is_default || a.isDefault ? (
                   <span className="text-[11px] font-bold uppercase tracking-wide text-slate-900 bg-[#CCFF00]/90 px-2 py-0.5 rounded border border-[#b8e600]">
                     Mặc định
                   </span>
                 ) : null}
               </div>
               <p className="text-sm text-slate-700">
-                {[a.line1, a.line2, a.ward, a.district].filter(Boolean).join(', ')}
+                {[a.line1, a.line2, a.ward, a.district, a.province].filter(Boolean).join(', ')}
               </p>
               <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => openEditModal(a)}
-                  className="text-sm font-semibold text-slate-800 hover:text-black underline-offset-2 hover:underline"
-                >
-                  Sửa
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onDelete(a.id)}
-                  className="text-sm font-semibold text-rose-600 hover:text-rose-700"
-                >
-                  Xóa
-                </button>
+                <button type="button" onClick={() => openEditModal(a)} className="text-sm font-semibold text-slate-800 hover:text-black underline-offset-2 hover:underline">Sửa</button>
+                <button type="button" onClick={() => onDelete(a.id)} className="text-sm font-semibold text-rose-600 hover:text-rose-700">Xóa</button>
               </div>
             </div>
           ))}
         </div>
       ) : null}
 
-      <button
-        type="button"
-        onClick={openAddModal}
-        className="rounded-2xl border border-slate-200 bg-white py-4 px-4 text-center font-bold text-slate-900 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-colors"
-      >
+      <button type="button" onClick={openAddModal} className="rounded-2xl border border-slate-200 bg-white py-4 px-4 text-center font-bold text-slate-900 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-colors">
         + Thêm địa chỉ nhận
       </button>
 
-      {modalOpen
-        ? createPortal(
-            <div
-              className="fixed inset-0 z-[1000] flex items-center justify-center overflow-y-auto overflow-x-hidden bg-slate-900/45 p-4 sm:p-6"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="address-modal-title"
-              onClick={(e) => {
-                if (e.target === e.currentTarget) closeModal();
-              }}
-            >
-              <div
-                className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[min(90dvh,640px)] flex flex-col overflow-hidden border border-slate-100"
-                onClick={(e) => e.stopPropagation()}
-              >
+      {modalOpen ? createPortal(
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center overflow-y-auto overflow-x-hidden bg-slate-900/45 p-4 sm:p-6" role="dialog" aria-modal="true" onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[min(90dvh,640px)] flex flex-col overflow-hidden border border-slate-100" onClick={(e) => e.stopPropagation()}>
             <div className="relative flex items-center justify-center min-h-[3rem] px-4 pt-3 pb-3 border-b border-slate-100 shrink-0 sm:px-5">
-              <h3 id="address-modal-title" className="text-center text-base font-bold text-slate-900 pr-10 pl-10">
+              <h3 className="text-center text-base font-bold text-slate-900 pr-10 pl-10">
                 {editingId ? 'Sửa địa chỉ người nhận' : 'Thêm địa chỉ người nhận'}
               </h3>
-              <button
-                type="button"
-                onClick={closeModal}
-                className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 inline-flex items-center justify-center rounded-lg text-slate-500 border border-transparent hover:bg-slate-100 hover:text-slate-900 transition-colors sm:right-4"
-                aria-label="Đóng"
-              >
+              <button type="button" onClick={closeModal} className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 inline-flex items-center justify-center rounded-lg text-slate-500 border border-transparent hover:bg-slate-100 hover:text-slate-900 transition-colors sm:right-4">
                 <span className="material-symbols-outlined text-[22px] leading-none">close</span>
               </button>
             </div>
-
             <form onSubmit={onSubmit} className="flex flex-col flex-1 min-h-0">
               <div className="overflow-y-auto px-5 py-4 space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className={labelClass} htmlFor="addr-name">Họ và tên</label>
-                    <input
-                      id="addr-name"
-                      name="recipientName"
-                      className={inputClass}
-                      placeholder="Nhập họ và tên"
-                      value={form.recipientName}
-                      onChange={onChange}
-                      required
-                    />
+                    <label className={labelClass}>Họ và tên</label>
+                    <input name="recipientName" className={inputClass} placeholder="Nhập họ và tên" value={form.recipientName} onChange={onChange} required />
                   </div>
                   <div>
-                    <label className={labelClass} htmlFor="addr-phone">Số điện thoại</label>
-                    <input
-                      id="addr-phone"
-                      name="phone"
-                      type="tel"
-                      className={inputClass}
-                      placeholder="Nhập số điện thoại"
-                      value={form.phone}
-                      onChange={onChange}
-                      required
-                    />
+                    <label className={labelClass}>Số điện thoại</label>
+                    <input name="phone" type="tel" className={inputClass} placeholder="Nhập số điện thoại" value={form.phone} onChange={onChange} required />
                   </div>
                 </div>
-
                 <div>
-                  <label className={labelClass} htmlFor="addr-line1">Địa chỉ nhận hàng</label>
-                  <input
-                    id="addr-line1"
-                    name="line1"
-                    className={inputClass}
-                    placeholder="Nhập địa chỉ cụ thể"
-                    value={form.line1}
-                    onChange={onChange}
-                    required
-                  />
+                  <label className={labelClass}>Địa chỉ nhận hàng</label>
+                  <input name="line1" className={inputClass} placeholder="Nhập địa chỉ cụ thể" value={form.line1} onChange={onChange} required />
                 </div>
-
                 <label className="flex items-start gap-3 cursor-pointer text-sm text-slate-800">
-                  <input
-                    type="checkbox"
-                    name="isDefault"
-                    checked={form.isDefault}
-                    onChange={onChange}
-                    className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-[#CCFF00] focus:ring-2 focus:ring-[#0b0b0b]/80"
-                  />
+                  <input type="checkbox" name="isDefault" checked={form.isDefault} onChange={onChange} className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-[#CCFF00] focus:ring-2 focus:ring-[#0b0b0b]/80" />
                   Dùng làm địa chỉ giao hàng mặc định
                 </label>
               </div>
-
               <div className="border-t border-slate-100 px-5 py-4 shrink-0 bg-white">
-                <button
-                  type="submit"
-                  className="w-full rounded-full py-3.5 font-bold text-sm text-white bg-slate-900 border shadow- hover:brightness-95 transition-all"
-                >
-                  Lưu
-                </button>
+                <button type="submit" className="w-full rounded-full py-3.5 font-bold text-sm text-white bg-slate-900 border shadow- hover:brightness-95 transition-all">Lưu</button>
               </div>
             </form>
-              </div>
-            </div>,
-            document.body
-          )
-        : null}
+          </div>
+        </div>,
+        document.body
+      ) : null}
     </div>
   );
 }

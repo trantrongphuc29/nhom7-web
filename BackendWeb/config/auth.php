@@ -37,9 +37,15 @@ return [
     |
     */
 
-    'guards' => [
+   'guards' => [
         'web' => [
             'driver' => 'session',
+            'provider' => 'users',
+        ],
+
+        // BẠN COPY VÀ PASTE THÊM ĐOẠN NÀY VÀO NHÉ
+        'api' => [
+            'driver' => 'jwt',
             'provider' => 'users',
         ],
     ],
