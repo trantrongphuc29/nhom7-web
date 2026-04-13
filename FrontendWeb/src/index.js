@@ -12,7 +12,9 @@ import ToastStack from './components/cart/ToastStack';
 import { setupMockServer } from './mocks/mockServer';
 
 const queryClient = new QueryClient();
-setupMockServer();
+if (process.env.REACT_APP_USE_MOCK_SERVER === '1') {
+  setupMockServer();
+}
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
