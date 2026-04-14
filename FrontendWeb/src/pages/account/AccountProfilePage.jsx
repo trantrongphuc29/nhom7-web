@@ -21,7 +21,7 @@ function FieldIcon({ children }) {
 }
 
 export default function AccountProfilePage() {
-  const { token, refreshUser } = useAuth();
+  const { token, setUser} = useAuth();
   const { success: toastSuccess, error: toastError } = useToast();
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
