@@ -1,287 +1,350 @@
--- Lapstore database schema (MySQL 8+)
--- Notes/assumptions:
--- - Frontend hiện có các luồng: listing sản phẩm, giỏ hàng, checkout, tài khoản, admin (products/orders/customers/promotions).
--- - "Cart" đang lưu localStorage nên không bắt buộc DB; DB tập trung vào orders và entities cốt lõi.
--- - Có snapshot dữ liệu sản phẩm trong order_items để tránh lệ thuộc thay đổi sau này.
+CREATE DATABASE IF NOT EXISTS laptop;
+USE laptop;
 
-SET NAMES utf8mb4;
-SET time_zone = '+07:00';
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Máy chủ: 127.0.0.1:3306
+-- Thời gian đã tạo: Th4 12, 2026 lúc 04:30 PM
+-- Phiên bản máy phục vụ: 9.1.0
+-- Phiên bản PHP: 8.3.14
 
--- ------------------------------------------------------------
--- Core: users & addresses
--- ------------------------------------------------------------
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
 
-CREATE TABLE IF NOT EXISTS users (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  email VARCHAR(255) NOT NULL,
-  password_hash VARCHAR(255) NULL,
-  full_name VARCHAR(255) NOT NULL,
-  phone VARCHAR(30) NULL,
-  role ENUM('admin','staff','user') NOT NULL DEFAULT 'user',
-  status ENUM('active','blocked') NOT NULL DEFAULT 'active',
-  loyalty_points INT NOT NULL DEFAULT 0,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  UNIQUE KEY uk_users_email (email),
-  KEY idx_users_role_status (role, status)
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Cơ sở dữ liệu: `laptop`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `orders`
+--
+
+DROP TABLE IF EXISTS `orders`;
+CREATE TABLE IF NOT EXISTS `orders` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` bigint UNSIGNED DEFAULT NULL,
+  `status` enum('pending','confirmed','shipping','completed','cancelled') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `payment_method` enum('cod','bank_transfer','card') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'cod',
+  `voucher_id` bigint UNSIGNED DEFAULT NULL,
+  `subtotal_amount` int NOT NULL DEFAULT '0',
+  `shipping_fee` int NOT NULL DEFAULT '0',
+  `discount_amount` int NOT NULL DEFAULT '0',
+  `voucher_discount_amount` int NOT NULL DEFAULT '0',
+  `total_amount` int NOT NULL DEFAULT '0',
+  `ship_recipient_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ship_phone` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ship_line1` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ship_line2` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ship_ward` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ship_district` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ship_province` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `customer_email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_orders_code` (`code`),
+  KEY `idx_orders_user` (`user_id`),
+  KEY `idx_orders_status_created` (`status`,`created_at`),
+  KEY `idx_orders_voucher` (`voucher_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=9002 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `orders`
+--
+
+INSERT INTO `orders` (`id`, `code`, `user_id`, `status`, `payment_method`, `voucher_id`, `subtotal_amount`, `shipping_fee`, `discount_amount`, `voucher_discount_amount`, `total_amount`, `ship_recipient_name`, `ship_phone`, `ship_line1`, `ship_line2`, `ship_ward`, `ship_district`, `ship_province`, `customer_email`, `created_at`, `updated_at`) VALUES
+(9001, 'ODR-001', 2, 'pending', 'cod', NULL, 0, 0, 0, 0, 35000000, 'Nguyễn Văn Khách', '0901234567', 'Số 1 Lý Tự Trọng', NULL, NULL, NULL, 'Hồ Chí Minh', NULL, '2026-04-12 10:27:40', '2026-04-12 10:27:40');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `order_items`
+--
+
+DROP TABLE IF EXISTS `order_items`;
+CREATE TABLE IF NOT EXISTS `order_items` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `order_id` bigint UNSIGNED NOT NULL,
+  `product_id` bigint UNSIGNED DEFAULT NULL,
+  `product_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `variant_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `image_url` varchar(1024) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `unit_price` int NOT NULL DEFAULT '0',
+  `quantity` int NOT NULL DEFAULT '1',
+  `line_total` int GENERATED ALWAYS AS ((`unit_price` * `quantity`)) STORED,
+  PRIMARY KEY (`id`),
+  KEY `idx_order_items_order` (`order_id`),
+  KEY `idx_order_items_product` (`product_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `order_items`
+--
+
+INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `product_name`, `variant_name`, `image_url`, `unit_price`, `quantity`) VALUES
+(1, 9001, 101, 'Dell XPS 13', NULL, NULL, 35000000, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `order_status_events`
+--
+
+DROP TABLE IF EXISTS `order_status_events`;
+CREATE TABLE IF NOT EXISTS `order_status_events` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `order_id` bigint UNSIGNED NOT NULL,
+  `status` enum('pending','confirmed','shipping','completed','cancelled') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `note` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_order_status_events_order` (`order_id`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS user_addresses (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id BIGINT UNSIGNED NOT NULL,
-  recipient_name VARCHAR(255) NOT NULL,
-  phone VARCHAR(30) NOT NULL,
-  line1 VARCHAR(255) NOT NULL,
-  line2 VARCHAR(255) NULL,
-  ward VARCHAR(255) NULL,
-  district VARCHAR(255) NULL,
-  province VARCHAR(255) NOT NULL,
-  is_default TINYINT(1) NOT NULL DEFAULT 0,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_user_addresses_user (user_id),
-  KEY idx_user_addresses_default (user_id, is_default),
-  CONSTRAINT fk_user_addresses_user
-    FOREIGN KEY (user_id) REFERENCES users(id)
-    ON DELETE CASCADE ON UPDATE CASCADE
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `products`
+--
+
+DROP TABLE IF EXISTS `products`;
+CREATE TABLE IF NOT EXISTS `products` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` enum('active','inactive','out_of_stock','coming_soon') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
+  `sale_price` int NOT NULL DEFAULT '0',
+  `original_price` int NOT NULL DEFAULT '0',
+  `stock_quantity` int NOT NULL DEFAULT '0',
+  `short_description` text COLLATE utf8mb4_unicode_ci,
+  `detail_html` mediumtext COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_products_status` (`status`),
+  KEY `idx_products_price` (`sale_price`)
+) ENGINE=InnoDB AUTO_INCREMENT=107 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `products`
+--
+
+INSERT INTO `products` (`id`, `name`, `status`, `sale_price`, `original_price`, `stock_quantity`, `short_description`, `detail_html`, `created_at`, `updated_at`) VALUES
+(101, 'Dell XPS 13', 'active', 35000000, 38000000, 5, NULL, NULL, '2026-04-12 10:27:40', '2026-04-12 10:27:40'),
+(102, 'HP Spectre x360', 'active', 32000000, 34000000, 3, NULL, NULL, '2026-04-12 10:27:40', '2026-04-12 10:27:40'),
+(103, 'Dell XPS 13 9340 (2024)', 'active', 45990000, 48990000, 5, 'Laptop doanh nhân siêu mỏng nhẹ, màn hình vô cực OLED.', '<p>Dell XPS 13 9340 là biểu tượng của sự sang trọng với chip Intel Core Ultra mới nhất...</p>', '2026-04-12 10:45:00', '2026-04-12 10:45:00'),
+(104, 'ROG Strix G16 G614JI', 'active', 38500000, 42000000, 8, 'Quái vật gaming với RTX 4070 và màn hình 240Hz.', '<p>Được thiết kế cho game thủ chuyên nghiệp, hệ thống tản nhiệt 3 quạt siêu mát...</p>', '2026-04-12 10:45:00', '2026-04-12 10:45:00'),
+(105, 'MacBook Pro 14 M3 Pro', 'active', 49990000, 52990000, 12, 'Sức mạnh khủng khiếp từ chip M3 Pro, màn hình Liquid Retina XDR.', '<p>Dành cho dân đồ họa và lập trình chuyên nghiệp, thời lượng pin lên tới 18h...</p>', '2026-04-12 10:45:00', '2026-04-12 10:45:00'),
+(106, 'Acer Swift Go 14', 'active', 18990000, 21500000, 20, 'Laptop văn phòng ngon bổ rẻ, màn hình OLED 2.8K.', '<p>Trọng lượng chỉ 1.3kg, hỗ trợ đầy đủ cổng kết nối và Webcam QHD...</p>', '2026-04-12 10:45:00', '2026-04-12 10:45:00');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `product_images`
+--
+
+DROP TABLE IF EXISTS `product_images`;
+CREATE TABLE IF NOT EXISTS `product_images` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `product_id` bigint UNSIGNED NOT NULL,
+  `url` varchar(1024) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sort_order` int NOT NULL DEFAULT '0',
+  `is_primary` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_product_images_product` (`product_id`),
+  KEY `idx_product_images_primary` (`product_id`,`is_primary`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `product_images`
+--
+
+INSERT INTO `product_images` (`id`, `product_id`, `url`, `sort_order`, `is_primary`, `created_at`) VALUES
+(1, 103, 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45', 1, 1, '2026-04-12 10:45:00'),
+(2, 104, 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0', 1, 1, '2026-04-12 10:45:00'),
+(3, 105, 'https://images.unsplash.com/photo-1517336714739-489689fd1ca8', 1, 1, '2026-04-12 10:45:00'),
+(4, 106, 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed', 1, 1, '2026-04-12 10:45:00');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `product_specs`
+--
+
+DROP TABLE IF EXISTS `product_specs`;
+CREATE TABLE IF NOT EXISTS `product_specs` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `product_id` bigint UNSIGNED NOT NULL,
+  `spec_key` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `spec_value` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_product_specs` (`product_id`,`spec_key`),
+  KEY `idx_product_specs_product` (`product_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `product_specs`
+--
+
+INSERT INTO `product_specs` (`id`, `product_id`, `spec_key`, `spec_value`) VALUES
+(1, 103, 'CPU', 'Intel Core Ultra 7 155H'),
+(2, 103, 'RAM', '16GB LPDDR5x 7467MT/s'),
+(3, 103, 'Ổ cứng', '512GB SSD NVMe Gen4'),
+(4, 103, 'Màn hình', '13.4 inch FHD+ InfinityEdge'),
+(5, 103, 'Trọng lượng', '1.19 kg'),
+(6, 104, 'CPU', 'Intel Core i9-13980HX'),
+(7, 104, 'GPU', 'NVIDIA GeForce RTX 4070 8GB'),
+(8, 104, 'RAM', '32GB DDR5 4800MHz'),
+(9, 104, 'Màn hình', '16 inch QHD+ 240Hz'),
+(10, 104, 'Pin', '90Whrs'),
+(11, 105, 'CPU', 'Apple M3 Pro (11-core CPU)'),
+(12, 105, 'GPU', '14-core GPU'),
+(13, 105, 'RAM', '18GB Unified Memory'),
+(14, 105, 'Màn hình', '14.2 inch Liquid Retina XDR'),
+(15, 105, 'Màu sắc', 'Space Black'),
+(16, 106, 'CPU', 'Intel Core i5-13500H'),
+(17, 106, 'RAM', '16GB LPDDR5'),
+(18, 106, 'Màn hình', '14 inch OLED 2.8K 90Hz'),
+(19, 106, 'Cổng kết nối', '2x USB-C (Thunderbolt 4), 2x USB-A');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `users`
+--
+
+DROP TABLE IF EXISTS `users`;
+CREATE TABLE IF NOT EXISTS `users` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `password_hash` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `full_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `phone` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `role` enum('admin','staff','user') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'user',
+  `status` enum('active','blocked') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
+  `loyalty_points` int NOT NULL DEFAULT '0',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_users_email` (`email`),
+  KEY `idx_users_role_status` (`role`,`status`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `users`
+--
+
+INSERT INTO `users` (`id`, `email`, `password_hash`, `full_name`, `phone`, `role`, `status`, `loyalty_points`, `created_at`, `updated_at`) VALUES
+(1, 'admin@gmail.com', '123456', 'Quản trị viên', NULL, 'admin', 'active', 0, '2026-04-12 10:27:40', '2026-04-12 10:42:37'),
+(2, 'user@gmail.com', NULL, 'Nguyễn Văn Khách', NULL, 'user', 'active', 0, '2026-04-12 10:27:40', '2026-04-12 10:27:40');
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `user_addresses`
+--
+
+DROP TABLE IF EXISTS `user_addresses`;
+CREATE TABLE IF NOT EXISTS `user_addresses` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` bigint UNSIGNED NOT NULL,
+  `recipient_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `phone` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `line1` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `line2` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ward` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `district` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `province` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `is_default` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_addresses_user` (`user_id`),
+  KEY `idx_user_addresses_default` (`user_id`,`is_default`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS products (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  name VARCHAR(255) NOT NULL,
-  status ENUM('active','inactive','out_of_stock','coming_soon') NOT NULL DEFAULT 'active',
-  -- pricing/stock: map theo admin form (salePrice/originalPrice/stockQuantity)
-  sale_price INT NOT NULL DEFAULT 0,
-  original_price INT NOT NULL DEFAULT 0,
-  stock_quantity INT NOT NULL DEFAULT 0,
-  short_description TEXT NULL,
-  detail_html MEDIUMTEXT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_products_status (status),
-  KEY idx_products_price (sale_price)
+--
+-- Cấu trúc bảng cho bảng `vouchers`
+--
+
+DROP TABLE IF EXISTS `vouchers`;
+CREATE TABLE IF NOT EXISTS `vouchers` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `discount_type` enum('fixed','percent') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `discount_value` int NOT NULL,
+  `max_discount_amount` int DEFAULT NULL,
+  `min_order_amount` int DEFAULT NULL,
+  `usage_limit` int DEFAULT NULL,
+  `used_count` int NOT NULL DEFAULT '0',
+  `start_at` datetime DEFAULT NULL,
+  `end_at` datetime DEFAULT NULL,
+  `status` enum('active','inactive') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_vouchers_code` (`code`),
+  KEY `idx_vouchers_status_time` (`status`,`start_at`,`end_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS product_images (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  product_id BIGINT UNSIGNED NOT NULL,
-  url VARCHAR(1024) NOT NULL,
-  sort_order INT NOT NULL DEFAULT 0,
-  is_primary TINYINT(1) NOT NULL DEFAULT 0,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_product_images_product (product_id),
-  KEY idx_product_images_primary (product_id, is_primary),
-  CONSTRAINT fk_product_images_product
-    FOREIGN KEY (product_id) REFERENCES products(id)
-    ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+--
+-- Các ràng buộc cho các bảng đã đổ
+--
 
--- Flexible specs: lưu dạng key/value để map với ProductSpecsForm
-CREATE TABLE IF NOT EXISTS product_specs (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  product_id BIGINT UNSIGNED NOT NULL,
-  spec_key VARCHAR(100) NOT NULL,
-  spec_value VARCHAR(500) NOT NULL,
-  PRIMARY KEY (id),
-  UNIQUE KEY uk_product_specs (product_id, spec_key),
-  KEY idx_product_specs_product (product_id),
-  CONSTRAINT fk_product_specs_product
-    FOREIGN KEY (product_id) REFERENCES products(id)
-    ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+--
+-- Các ràng buộc cho bảng `orders`
+--
+ALTER TABLE `orders`
+  ADD CONSTRAINT `fk_orders_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_orders_voucher` FOREIGN KEY (`voucher_id`) REFERENCES `vouchers` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
--- ------------------------------------------------------------
--- Promotions/Vouchers
--- ------------------------------------------------------------
+--
+-- Các ràng buộc cho bảng `order_items`
+--
+ALTER TABLE `order_items`
+  ADD CONSTRAINT `fk_order_items_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_order_items_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
-CREATE TABLE IF NOT EXISTS vouchers (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  code VARCHAR(50) NOT NULL,
-  name VARCHAR(255) NOT NULL,
-  discount_type ENUM('fixed','percent') NOT NULL,
-  discount_value INT NOT NULL,
-  max_discount_amount INT NULL,
-  min_order_amount INT NULL,
-  usage_limit INT NULL,
-  used_count INT NOT NULL DEFAULT 0,
-  start_at DATETIME NULL,
-  end_at DATETIME NULL,
-  status ENUM('active','inactive') NOT NULL DEFAULT 'active',
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  UNIQUE KEY uk_vouchers_code (code),
-  KEY idx_vouchers_status_time (status, start_at, end_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+--
+-- Các ràng buộc cho bảng `order_status_events`
+--
+ALTER TABLE `order_status_events`
+  ADD CONSTRAINT `fk_order_status_events_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
--- ------------------------------------------------------------
--- Orders
--- ------------------------------------------------------------
+--
+-- Các ràng buộc cho bảng `product_images`
+--
+ALTER TABLE `product_images`
+  ADD CONSTRAINT `fk_product_images_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
-CREATE TABLE IF NOT EXISTS orders (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  code VARCHAR(50) NOT NULL,
-  user_id BIGINT UNSIGNED NULL,
-  status ENUM('pending','confirmed','shipping','completed','cancelled') NOT NULL DEFAULT 'pending',
-  payment_method ENUM('cod','bank_transfer','card') NOT NULL DEFAULT 'cod',
-  voucher_id BIGINT UNSIGNED NULL,
-  subtotal_amount INT NOT NULL DEFAULT 0,
-  shipping_fee INT NOT NULL DEFAULT 0,
-  discount_amount INT NOT NULL DEFAULT 0,
-  voucher_discount_amount INT NOT NULL DEFAULT 0,
-  total_amount INT NOT NULL DEFAULT 0,
-  -- shipping snapshot (đúng với flow ShippingInfo/Checkout)
-  ship_recipient_name VARCHAR(255) NOT NULL,
-  ship_phone VARCHAR(30) NOT NULL,
-  ship_line1 VARCHAR(255) NOT NULL,
-  ship_line2 VARCHAR(255) NULL,
-  ship_ward VARCHAR(255) NULL,
-  ship_district VARCHAR(255) NULL,
-  ship_province VARCHAR(255) NOT NULL,
-  customer_email VARCHAR(255) NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  UNIQUE KEY uk_orders_code (code),
-  KEY idx_orders_user (user_id),
-  KEY idx_orders_status_created (status, created_at),
-  KEY idx_orders_voucher (voucher_id),
-  CONSTRAINT fk_orders_user
-    FOREIGN KEY (user_id) REFERENCES users(id)
-    ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT fk_orders_voucher
-    FOREIGN KEY (voucher_id) REFERENCES vouchers(id)
-    ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+--
+-- Các ràng buộc cho bảng `product_specs`
+--
+ALTER TABLE `product_specs`
+  ADD CONSTRAINT `fk_product_specs_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
-CREATE TABLE IF NOT EXISTS order_items (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  order_id BIGINT UNSIGNED NOT NULL,
-  product_id BIGINT UNSIGNED NULL,
-  product_name VARCHAR(255) NOT NULL,
-  variant_name VARCHAR(255) NULL,
-  image_url VARCHAR(1024) NULL,
-  unit_price INT NOT NULL DEFAULT 0,
-  quantity INT NOT NULL DEFAULT 1,
-  line_total INT AS (unit_price * quantity) STORED,
-  PRIMARY KEY (id),
-  KEY idx_order_items_order (order_id),
-  KEY idx_order_items_product (product_id),
-  CONSTRAINT fk_order_items_order
-    FOREIGN KEY (order_id) REFERENCES orders(id)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT fk_order_items_product
-    FOREIGN KEY (product_id) REFERENCES products(id)
-    ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+--
+-- Các ràng buộc cho bảng `user_addresses`
+--
+ALTER TABLE `user_addresses`
+  ADD CONSTRAINT `fk_user_addresses_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+COMMIT;
 
-CREATE TABLE IF NOT EXISTS order_status_events (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  order_id BIGINT UNSIGNED NOT NULL,
-  status ENUM('pending','confirmed','shipping','completed','cancelled') NOT NULL,
-  note VARCHAR(500) NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_order_status_events_order (order_id, created_at),
-  CONSTRAINT fk_order_status_events_order
-    FOREIGN KEY (order_id) REFERENCES orders(id)
-    ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ------------------------------------------------------------
--- Seed data
--- ------------------------------------------------------------
--- Chạy cả file để tạo bảng + dữ liệu mẫu.
--- Nếu muốn nạp lại dữ liệu mẫu, chạy riêng đoạn dưới.
-
-SET FOREIGN_KEY_CHECKS = 0;
-TRUNCATE TABLE order_status_events;
-TRUNCATE TABLE order_items;
-TRUNCATE TABLE orders;
-TRUNCATE TABLE product_specs;
-TRUNCATE TABLE product_images;
-TRUNCATE TABLE products;
-TRUNCATE TABLE user_addresses;
-TRUNCATE TABLE vouchers;
-TRUNCATE TABLE users;
-SET FOREIGN_KEY_CHECKS = 1;
-
-INSERT INTO users (id, email, password_hash, full_name, phone, role, status, loyalty_points) VALUES
-  (1, 'admin@gmail.com', NULL, 'Lapstore Admin', '0901234567', 'admin', 'active', 0),
-  (2, 'staff@gmail.com', NULL, 'Lapstore Staff', '0909999999', 'staff', 'active', 0),
-  (201, 'user@gmail.com', NULL, 'Nguyen Van A', '0912345678', 'user', 'active', 230),
-  (202, 'b@lapstore.vn', NULL, 'Tran Thi B', '0988222111', 'user', 'blocked', 45);
-
-INSERT INTO user_addresses (id, user_id, recipient_name, phone, line1, line2, ward, district, province, is_default) VALUES
-  (1, 201, 'Nguyen Van A', '0912345678', '123 Le Loi', '', 'Phuong Ben Thanh', 'Quan 1', 'TP Ho Chi Minh', 1),
-  (2, 201, 'Nguyen Van A', '0912345678', '56 Tran Phu', 'Tang 3', 'Phuong Dien Bien', 'Ba Dinh', 'Ha Noi', 0);
-
-INSERT INTO products (id, name, status, sale_price, original_price, stock_quantity, short_description, detail_html) VALUES
-  (101, 'ASUS Zenbook 14 OLED', 'active', 27990000, 29990000, 12,
-   'Mau laptop OLED mong nhe cho cong viec va di chuyen.',
-   '<p>Man hinh OLED 2.8K, pin ben bi va hieu nang on dinh cho cong viec hang ngay.</p>'),
-  (102, 'Lenovo LOQ 15', 'active', 25990000, 27990000, 8,
-   'Gaming laptop manh me voi RTX va tan nhiet on dinh.',
-   '<p>Phu hop cho gaming va do hoa voi bo xu ly Intel Core i7 va RTX 4060.</p>'),
-  (103, 'MacBook Air M3 13', 'coming_soon', 33990000, 33990000, 0,
-   'Mau laptop Apple the he moi, pin dai va nhe.',
-   '<p>Chip M3 tiet kiem dien nang, phu hop hoc tap va cong viec sang tao.</p>');
-
-INSERT INTO product_images (id, product_id, url, sort_order, is_primary) VALUES
-  (1001, 101, 'https://images.unsplash.com/photo-1517336714739-489689fd1ca8?auto=format&fit=crop&w=960&q=80', 1, 1),
-  (1002, 102, 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?auto=format&fit=crop&w=960&q=80', 1, 1),
-  (1003, 103, 'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&w=960&q=80', 1, 1);
-
-INSERT INTO product_specs (product_id, spec_key, spec_value) VALUES
-  (101, 'cpu', 'Intel Core Ultra 7'),
-  (101, 'ram', '16GB LPDDR5X'),
-  (101, 'storage', '1TB SSD'),
-  (101, 'screen_size', '14 inch'),
-  (101, 'screen_resolution', '2880x1800'),
-  (101, 'os', 'Windows 11'),
-  (102, 'cpu', 'Intel Core i7-13620H'),
-  (102, 'gpu_discrete', 'RTX 4060 8GB'),
-  (102, 'ram', '16GB DDR5'),
-  (102, 'storage', '512GB SSD'),
-  (102, 'screen_size', '15.6 inch'),
-  (102, 'os', 'Windows 11'),
-  (103, 'cpu', 'Apple M3'),
-  (103, 'ram', '16GB Unified'),
-  (103, 'storage', '512GB SSD'),
-  (103, 'screen_size', '13.6 inch'),
-  (103, 'os', 'macOS');
-
-INSERT INTO vouchers (id, code, name, discount_type, discount_value, max_discount_amount, min_order_amount, usage_limit, used_count, start_at, end_at, status) VALUES
-  (1, 'WELCOME500K', 'Giam 500K cho don dau', 'fixed', 500000, NULL, 5000000, 1000, 12, '2026-01-01 00:00:00', '2026-12-31 23:59:59', 'active'),
-  (2, 'SALE10', 'Giam 10% toi da 1 trieu', 'percent', 10, 1000000, 3000000, 5000, 128, '2026-01-01 00:00:00', '2026-12-31 23:59:59', 'active');
-
-INSERT INTO orders (
-  id, code, user_id, status, payment_method, voucher_id,
-  subtotal_amount, shipping_fee, discount_amount, voucher_discount_amount, total_amount,
-  ship_recipient_name, ship_phone, ship_line1, ship_line2, ship_ward, ship_district, ship_province, customer_email
-) VALUES
-  (
-    9001, 'ODR-9001', 201, 'pending', 'cod', 1,
-    27990000, 50000, 500000, 500000, 27540000,
-    'Nguyen Van A', '0912345678', '123 Le Loi', '', 'Phuong Ben Thanh', 'Quan 1', 'TP Ho Chi Minh', 'customer@lapstore.vn'
-  ),
-  (
-    9002, 'ODR-9002', 201, 'confirmed', 'bank_transfer', 2,
-    25990000, 0, 1000000, 1000000, 24990000,
-    'Nguyen Van A', '0912345678', '56 Tran Phu', 'Tang 3', 'Phuong Dien Bien', 'Ba Dinh', 'Ha Noi', 'customer@lapstore.vn'
-  );
-
-INSERT INTO order_items (id, order_id, product_id, product_name, variant_name, image_url, unit_price, quantity) VALUES
-  (1, 9001, 101, 'ASUS Zenbook 14 OLED', '16GB / 1TB / Bac', 'https://images.unsplash.com/photo-1517336714739-489689fd1ca8?auto=format&fit=crop&w=960&q=80', 27990000, 1),
-  (2, 9002, 102, 'Lenovo LOQ 15', '16GB / 512GB / Den', 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?auto=format&fit=crop&w=960&q=80', 25990000, 1);
-
-INSERT INTO order_status_events (order_id, status, note, created_at) VALUES
-  (9001, 'pending', 'Don hang moi tao', NOW() - INTERVAL 1 DAY),
-  (9002, 'pending', 'Don hang moi tao', NOW() - INTERVAL 2 DAY),
-  (9002, 'confirmed', 'Da xac nhan thanh toan', NOW() - INTERVAL 1 DAY);
-
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
