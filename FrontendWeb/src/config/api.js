@@ -1,5 +1,5 @@
 // Cấu hình base URL cho API và Backend
-const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || '/api/v1';
 const BACKEND_BASE_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 export const API_ENDPOINTS = {
