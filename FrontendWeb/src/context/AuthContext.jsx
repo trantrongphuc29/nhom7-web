@@ -1,66 +1,84 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { mockData } from '../mocks/mockData';
+import { postJson, getJson } from '../services/apiClient';
+import { API_ENDPOINTS } from '../config/api';
 
 const AuthContext = createContext(null);
-const DEMO_PASSWORD = '123456';
-
-function resolveMockUserByEmail(email) {
-  const normalized = String(email || '').trim().toLowerCase();
-  if (normalized === String(mockData.adminUser?.email || '').toLowerCase()) {
-    return { token: 'mock-token-admin', user: mockData.adminUser };
-  }
-  if (normalized === String(mockData.user?.email || '').toLowerCase()) {
-    return { token: 'mock-token-user', user: mockData.user };
-  }
-  return null;
-}
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState('');
-  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(() => localStorage.getItem('access_token') || '');
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('user_info');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
   const [isLoading, setIsLoading] = useState(false);
 
-  const refreshUser = useCallback(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    return user;
-  }, [user]);
-
+  // --- Hàm Đăng nhập ---
   const login = async (email, password) => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      if (String(password || '') !== DEMO_PASSWORD) {
-        throw new Error('Sai mật khẩu. Dùng mật khẩu demo: 123456');
-      }
-      const resolved = resolveMockUserByEmail(email);
-      if (!resolved) {
-        throw new Error('Không tìm thấy tài khoản.');
-      }
-      setToken(resolved.token);
-      setUser(resolved.user);
-      return resolved.user;
+      const response = await postJson(API_ENDPOINTS.AUTH_LOGIN, { email, password });
+      const { token: authToken, user: authUser } = response.data;
+
+      setToken(authToken);
+      setUser(authUser);
+      localStorage.setItem('access_token', authToken);
+      localStorage.setItem('user_info', JSON.stringify(authUser));
+
+      return authUser;
+    } catch (error) {
+      throw new Error(error.message || 'Đăng nhập thất bại');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const register = async (email, password, confirmPassword) => {
-    void email;
-    void password;
-    void confirmPassword;
+  // --- Hàm Đăng ký (Đã sửa để khớp hoàn toàn với Laravel confirmed rule) ---
+  const register = async (fullName, email, password, passwordConfirmation) => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      return { success: true };
+      const response = await postJson(API_ENDPOINTS.AUTH_REGISTER, {
+        full_name: fullName,
+        email: email,
+        password: password,
+        password_confirmation: passwordConfirmation // Gửi kèm để Laravel kiểm tra khớp mật khẩu
+      });
+
+      const { token: authToken, user: authUser } = response.data;
+
+      setToken(authToken);
+      setUser(authUser);
+      localStorage.setItem('access_token', authToken);
+      localStorage.setItem('user_info', JSON.stringify(authUser));
+
+      return authUser;
+    } catch (error) {
+      // Bắt lỗi validation từ Laravel gửi về
+      throw new Error(error.message || 'Đăng ký thất bại');
     } finally {
       setIsLoading(false);
     }
   };
 
+  // --- Hàm Đăng xuất ---
   const logout = () => {
     setToken('');
     setUser(null);
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('user_info');
   };
+
+  const refreshUser = useCallback(async () => {
+    if (!token) return null;
+    try {
+      const res = await getJson(API_ENDPOINTS.AUTH_ME);
+      setUser(res.data);
+      localStorage.setItem('user_info', JSON.stringify(res.data));
+      return res.data;
+    } catch {
+      logout();
+      return null;
+    }
+  }, [token]);
 
   const value = useMemo(
     () => ({
@@ -69,7 +87,7 @@ export function AuthProvider({ children }) {
       isAuthenticated: Boolean(token && user),
       isLoading,
       login,
-      register,
+      register, // Hàm đã có đầy đủ 4 tham số
       logout,
       refreshUser,
     }),
@@ -81,8 +99,6 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 }

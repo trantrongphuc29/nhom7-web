@@ -2,30 +2,76 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Tymon\JWTAuth\Contracts\JWTSubject; // Interface bắt buộc để dùng JWT
 
-#[Fillable(['full_name', 'email', 'phone', 'password', 'role', 'status', 'loyalty_points'])]
-#[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements JWTSubject
 {
-    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * Danh sách các cột có thể chèn dữ liệu (Mass Assignment)
+     */
+    protected $fillable = [
+        'full_name',
+        'email',
+        'phone',
+        'password_hash', // Đã đổi tên khớp với DB của bạn
+        'role',
+        'status',
+        'loyalty_points'
+    ];
+
+    /**
+     * Các trường cần ẩn khi API trả về dữ liệu (Bảo mật)
+     */
+    protected $hidden = [
+        'password_hash',
+        'remember_token',
+    ];
+
+    /**
+     * Ép kiểu dữ liệu (Casts)
+     * Laravel 11 sẽ tự động Hash mật khẩu khi bạn gán giá trị vào 'password_hash'
      */
     protected function casts(): array
     {
         return [
-            'password' => 'hashed',
+            'password_hash' => 'hashed',
+        ];
+    }
+
+    /**
+     * Cực kỳ quan trọng: Báo cho Laravel biết mật khẩu nằm ở cột nào
+     * Vì mặc định Laravel tìm cột 'password'
+     */
+    public function getAuthPassword()
+    {
+        return $this->password_hash;
+    }
+
+    // =========================================================================
+    // CÁC PHƯƠNG THỨC BẮT BUỘC CỦA JWT
+    // =========================================================================
+
+    /**
+     * Lấy định danh người dùng (thường là khóa chính ID)
+     */
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    /**
+     * Lưu thêm thông tin tùy chỉnh vào bên trong Token (Payload)
+     * Ở đây chúng ta lưu 'role' để Middleware có thể kiểm tra quyền Admin/Staff nhanh chóng
+     */
+    public function getJWTCustomClaims()
+    {
+        return [
+            'role' => $this->role,
         ];
     }
 }
