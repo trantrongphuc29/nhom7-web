@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS laptop;
-USE laptop;
+CREATE DATABASE IF NOT EXISTS lapstore;
+USE lapstore;
 
 -- phpMyAdmin SQL Dump
 -- version 5.2.1
@@ -21,7 +21,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Cơ sở dữ liệu: `laptop`
+-- Cơ sở dữ liệu: `lapstore`
 --
 
 -- --------------------------------------------------------
