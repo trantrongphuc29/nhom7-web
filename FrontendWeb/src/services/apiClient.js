@@ -1,9 +1,17 @@
 import axios from "axios";
 import { notifyUnauthorizedSession } from "../utils/authSession";
 
+<<<<<<< HEAD
+// Cấu hình địa chỉ Backend Laravel
+const BASE_URL = "http://localhost:8000/api/v1";
+
+const http = axios.create({
+  baseURL: BASE_URL,
+=======
 // Thêm cấu hình baseURL vào đây
 const http = axios.create({
   baseURL: "http://127.0.0.1:8000", 
+>>>>>>> 9f13fa83b9401ffead9746ad8b7d81ee236cc391
 });
 
 function toFetchLikeResponse(response) {
@@ -19,6 +27,8 @@ function normalizeMessage(error) {
   return error?.message || "Request failed";
 }
 
+<<<<<<< HEAD
+=======
 async function requestViaMockServer(url, options = {}) {
   // 🛑 BỘ LỌC THÔNG MINH: Chỉ tắt Mock đối với các API bạn đã làm xong ở Backend
   if (url.includes('/api/v1/auth') || url.includes('/api/v1/account')) {
@@ -52,12 +62,18 @@ async function requestViaMockServer(url, options = {}) {
   };
 }
 
+>>>>>>> 9f13fa83b9401ffead9746ad8b7d81ee236cc391
 export async function requestJson(url, options = {}) {
   const method = (options.method || "GET").toUpperCase();
+  const token = localStorage.getItem("access_token");
+
   const config = {
     url,
     method,
-    headers: options.headers || {},
+    headers: {
+      ...options.headers,
+      Authorization: token ? `Bearer ${token}` : "", 
+    },
     data: options.body,
     withCredentials: options.withCredentials,
     params: options.params,
@@ -65,27 +81,10 @@ export async function requestJson(url, options = {}) {
   };
 
   try {
-    const mockResponse = await requestViaMockServer(url, {
-      method,
-      headers: config.headers,
-      body: config.data,
-    });
-    if (mockResponse) {
-      const fetchLikeResponse = toFetchLikeResponse(mockResponse);
-      notifyUnauthorizedSession(fetchLikeResponse, options);
-      if (!fetchLikeResponse.ok) {
-        throw new Error(mockResponse?.data?.message || `Request failed with status ${mockResponse.status}`);
-      }
-      const data = mockResponse?.data ?? {};
-      if (data?.success === false) {
-        throw new Error(data?.message || `Request failed with status ${mockResponse.status}`);
-      }
-      return data;
-    }
-
     const response = await http.request(config);
     const fetchLikeResponse = toFetchLikeResponse(response);
     notifyUnauthorizedSession(fetchLikeResponse, options);
+
     const data = response?.data ?? {};
     if (data?.success === false) {
       throw new Error(data?.message || `Request failed with status ${response.status}`);
@@ -97,6 +96,8 @@ export async function requestJson(url, options = {}) {
     throw new Error(normalizeMessage(error));
   }
 }
+
+// --- CÁC HÀM HELPER ---
 
 export function getJson(url, options = {}) {
   return requestJson(url, { ...options, method: "GET" });
@@ -111,6 +112,7 @@ export function postJson(url, body, options = {}) {
   });
 }
 
+// Hàm PUT (Sửa lỗi "not found in apiClient" của bạn)
 export function putJson(url, body, options = {}) {
   return requestJson(url, {
     ...options,
@@ -120,6 +122,7 @@ export function putJson(url, body, options = {}) {
   });
 }
 
+// Hàm PATCH (Sửa lỗi "not found in apiClient" của bạn)
 export function patchJson(url, body, options = {}) {
   return requestJson(url, {
     ...options,

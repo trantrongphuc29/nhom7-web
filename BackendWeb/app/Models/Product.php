@@ -17,8 +17,11 @@ class Product extends Model
         'detail_html',
     ];
 
-    public function images(): HasMany
-    {
+    public function images() {
         return $this->hasMany(ProductImage::class);
+    }
+    
+    public function specs(){
+        return $this->hasMany(ProductSpec::class);
     }
 }
