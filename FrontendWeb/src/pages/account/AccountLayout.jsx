@@ -5,20 +5,6 @@ import Footer from '../../components/Footer';
 import { useAuth } from '../../context/AuthContext';
 import { getJson } from '../../services/apiClient';
 
-function greetingText() {
-  const h = new Date().getHours();
-  if (h < 12) return 'Chào buổi sáng';
-  if (h < 18) return 'Chào buổi chiều';
-  return 'Chào buổi tối';
-}
-
-function greetingIconSrc() {
-  const h = new Date().getHours();
-  if (h < 12) return "https://api.iconify.design/twemoji:sun.svg";
-  if (h < 18) return "https://api.iconify.design/twemoji:sun-behind-small-cloud.svg";
-  return "https://api.iconify.design/twemoji:crescent-moon.svg";
-}
-
 const navClass = ({ isActive }) =>
   [
     'flex items-center gap-2.5 pl-3 pr-3 py-2 rounded-full text-sm transition-colors border border-transparent',
@@ -42,13 +28,9 @@ export default function AccountLayout() {
     (async () => {
       if (!token) return;
       try {
-        // 1. ÉP GỌI SANG LARAVEL (CỔNG 8000) ĐỂ KHÔNG BỊ DÍNH MOCK DATA
-        const json = await getJson('http://127.0.0.1:8000/api/v1/account/profile', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const json = await getJson('/account/profile');
         if (cancelled) return;
         const p = json?.data || json;
-        // 2. LẤY ĐÚNG CỘT full_name TỪ DATABASE
         setProfileName(p?.full_name || p?.fullName || '');
       } catch {
         // Lỗi sẽ tự im lặng, dùng tên lấy từ useAuth()
@@ -68,14 +50,8 @@ export default function AccountLayout() {
     <div className="min-h-screen flex flex-col bg-white font-display text-slate-900">
       <Header />
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8">
-        <div className="flex items-start gap-4 mb-8">
-          <div className="h-12 w-12 rounded-2xl bg-white text-slate-700 flex items-center justify-center shrink-0" aria-hidden>
-            <img src={greetingIconSrc()} alt="" className="max-h-8 max-w-8 w-8 h-8 object-contain" />
-          </div>
-          <div>
-            <p className="text-slate-600 text-base">{greetingText()},</p>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">{displayName}</h1>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{displayName}</h1>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8 items-start">

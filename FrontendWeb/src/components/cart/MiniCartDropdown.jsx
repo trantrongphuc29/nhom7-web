@@ -1,13 +1,12 @@
 import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 import { BACKEND_BASE_URL } from "../../config/api";
 import { useCart } from "../../context/CartContext";
-import { useToast } from "../../context/ToastContext";
 import { fmtPrice } from "../../utils/format";
 
 export default function MiniCartDropdown({ open, onClose, anchorRef }) {
   const { items, updateQuantity, removeLine, restoreLine, totals } = useCart();
-  const { undo } = useToast();
   const panelRef = useRef(null);
 
   useEffect(() => {
@@ -100,7 +99,21 @@ export default function MiniCartDropdown({ open, onClose, anchorRef }) {
                           const backup = { ...li };
                           removeLine(li.lineId);
                           const shortName = li.name.length > 32 ? `${li.name.slice(0, 32)}…` : li.name;
-                          undo(`Đã xóa ${shortName}.`, () => restoreLine(backup), { duration: 5000 });
+                          toast((t) => (
+                            <div className="flex items-center gap-2">
+                              <span>{`Đã xóa ${shortName}.`}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  restoreLine(backup);
+                                  toast.dismiss(t.id);
+                                }}
+                                className="font-semibold underline"
+                              >
+                                Hoàn tác
+                              </button>
+                            </div>
+                          ), { duration: 5000 });
                         }}
                         className="text-slate-400 hover:text-rose-600 p-1"
                         aria-label="Xóa"

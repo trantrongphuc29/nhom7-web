@@ -6,8 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
 use App\Http\Requests\Api\V1\Auth\RegisterRequest;
 use App\Models\User;
-use App\Services\JwtService;
 use App\Support\ApiResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
@@ -26,9 +27,10 @@ class AuthController extends Controller
             'loyalty_points' => 0,
         ]);
 
-        $token = app(JwtService::class)->makeToken($user);
+        Auth::login($user);
+        $request->session()->regenerate();
+
         return ApiResponse::success([
-            'token' => $token,
             'user' => $user,
         ], 'Register successful', 201);
     }
@@ -43,20 +45,25 @@ class AuthController extends Controller
             return ApiResponse::error('Invalid credentials', 401);
         }
 
-        $token = app(JwtService::class)->makeToken($user);
+        Auth::login($user);
+        $request->session()->regenerate();
+
         return ApiResponse::success([
-            'token' => $token,
             'user' => $user,
         ], 'Login successful');
     }
 
-    public function me()
+    public function me(Request $request)
     {
-        return ApiResponse::success(request()->user());
+        return ApiResponse::success($request->user());
     }
 
-    public function logout()
+    public function logout(Request $request)
     {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
         return ApiResponse::success(null, 'Logout successful');
     }
 }

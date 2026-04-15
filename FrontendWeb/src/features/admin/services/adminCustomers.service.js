@@ -1,25 +1,17 @@
 import { API_ENDPOINTS } from "../../../config/api";
 import { getJson, patchJson } from "../../../services/apiClient";
 
-function headers(token) {
-  return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
-}
-
-export async function getAdminCustomers(params, token) {
+export async function getAdminCustomers(params) {
   const query = new URLSearchParams();
-  Object.entries(params || {}).forEach(([k, v]) => {
-    if (v !== "" && v != null) query.append(k, v);
-  });
-  const res = await getJson(`${API_ENDPOINTS.ADMIN_CUSTOMERS}?${query.toString()}`, { headers: headers(token) });
-  return res.data || {};
-}
-
-export async function getAdminCustomerDetail(id, token) {
-  const res = await getJson(API_ENDPOINTS.ADMIN_CUSTOMER_DETAIL(id), { headers: headers(token) });
+  const page = Number(params?.page || 1);
+  const limit = Number(params?.limit || 10);
+  query.set("page", String(page));
+  query.set("limit", String(limit));
+  const res = await getJson(`${API_ENDPOINTS.ADMIN_CUSTOMERS}?${query.toString()}`);
   return res.data || {};
 }
 
 export async function updateAdminCustomerStatus(id, payload, token) {
-  const res = await patchJson(API_ENDPOINTS.ADMIN_CUSTOMER_STATUS(id), payload, { headers: headers(token) });
+  const res = await patchJson(API_ENDPOINTS.ADMIN_CUSTOMER_STATUS(id), payload);
   return res.data || {};
 }

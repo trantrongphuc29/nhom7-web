@@ -1,7 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useStoreConfig } from "./StoreConfigContext";
-import { buildVariantSummary } from "../utils/productSpec";
-import { mockData } from "../mocks/mockData";
 
 const CartContext = createContext(null);
 const STORAGE_KEY = "lapstore_cart_v1";
@@ -11,26 +9,7 @@ const STORAGE_KEY = "lapstore_cart_v1";
 function loadCart() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      const defaultProduct = mockData.products[0];
-      const defaultVariant = defaultProduct?.variants?.[0];
-      if (!defaultProduct || !defaultVariant) return [];
-      return [
-        {
-          lineId: getLineId(defaultProduct.id, defaultVariant.id),
-          productId: defaultProduct.id,
-          variantId: defaultVariant.id,
-          name: defaultProduct.name,
-          image: defaultVariant.image || defaultProduct.image || null,
-          specSummary: buildVariantSummary(defaultVariant, defaultProduct.specs),
-          price: Number(defaultVariant.price) || 0,
-          stock: Number(defaultVariant.stock) || 0,
-          quantity: 1,
-          color: defaultVariant.color || undefined,
-          productSlug: defaultProduct.slug || undefined,
-        },
-      ];
-    }
+    if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
   } catch {
@@ -59,13 +38,13 @@ export function stockStatus(stock, qty) {
   return "in";
 }
 
-export function computeCartTotals(items, discount = 0, shipping = {}) {
+export function computeCartTotals(items, shipping = {}) {
   const subtotal = items.reduce((sum, li) => sum + Number(li.price) * Number(li.quantity), 0);
   const threshold = Number(shipping.freeShippingThreshold) || 10_000_000;
   const fee = Number(shipping.defaultShippingFee) || 50_000;
   const shippingFee = subtotal >= threshold ? 0 : fee;
-  const total = Math.max(0, subtotal - discount + shippingFee);
-  return { subtotal, discount, shippingFee, total };
+  const total = Math.max(0, subtotal + shippingFee);
+  return { subtotal, shippingFee, total };
 }
 
 export function cartAllInStock(items) {
@@ -121,7 +100,7 @@ export function CartProvider({ children }) {
   const itemCount = useMemo(() => items.reduce((s, li) => s + li.quantity, 0), [items]);
 
   const totals = useMemo(
-    () => computeCartTotals(items, 0, { defaultShippingFee, freeShippingThreshold }),
+    () => computeCartTotals(items, { defaultShippingFee, freeShippingThreshold }),
     [items, defaultShippingFee, freeShippingThreshold]
   );
 

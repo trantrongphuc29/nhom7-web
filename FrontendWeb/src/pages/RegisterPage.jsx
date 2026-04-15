@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getStaffHomePath, isStaffRole } from '../features/admin/utils/rbac';
 import toast from 'react-hot-toast';
 
 function RegisterPage() {
@@ -53,7 +54,7 @@ function RegisterPage() {
     try {
       setError('');
       // Gửi 4 tham số: Tên, Email, Mật khẩu, Xác nhận mật khẩu
-      await register(
+      const user = await register(
         form.fullName.trim(), 
         form.email.trim().toLowerCase(), 
         form.password, 
@@ -61,7 +62,7 @@ function RegisterPage() {
       );
       
       toast.success('Chào mừng bạn đến với LapStore!');
-      navigate('/admin/products', { replace: true });
+      navigate(isStaffRole(user?.role) ? getStaffHomePath() : '/', { replace: true });
     } catch (err) {
       // Hiển thị lỗi từ Laravel (ví dụ: Email đã tồn tại)
       setError(err.message);
@@ -73,7 +74,7 @@ function RegisterPage() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-xl p-8">
         <h1 className="text-2xl font-bold text-slate-900 mb-1">Đăng ký</h1>
-        <p className="text-sm text-slate-500 mb-6">Tạo tài khoản để quản lý kho hàng.</p>
+        <p className="text-sm text-slate-500 mb-6">Tạo tài khoản để quản lý thông tin</p>
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
@@ -84,7 +85,6 @@ function RegisterPage() {
               value={form.fullName}
               onChange={onChange}
               className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="Ví dụ: Đỗ Văn Hin"
             />
             {form.fullName && fullNameError && <p className="text-xs text-red-500 mt-1">{fullNameError}</p>}
           </div>
@@ -96,8 +96,7 @@ function RegisterPage() {
               type="email"
               value={form.email}
               onChange={onChange}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="hin@gmail.com"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:ring-2 focus:ring-[#CCFF00]"
             />
             {form.email && emailError && <p className="text-xs text-red-500 mt-1">{emailError}</p>}
           </div>
@@ -130,14 +129,14 @@ function RegisterPage() {
           <button
             type="submit"
             disabled={!canSubmit}
-            className="w-full rounded-lg bg-blue-600 text-white py-3 font-bold hover:bg-blue-700 transition disabled:opacity-50 shadow-md"
+            className="w-full rounded-lg bg-slate-900 text-white py-2.5 font-semibold hover:bg-slate-800 transition disabled:opacity-60"
           >
             {isLoading ? 'Đang xử lý...' : 'Đăng ký tài khoản'}
           </button>
         </form>
 
         <p className="text-sm text-slate-600 mt-6 text-center">
-          Đã có tài khoản? <Link to="/login" className="font-bold text-blue-600 hover:underline">Đăng nhập</Link>
+          Đã có tài khoản? <Link to="/login" className="font-semibold text-slate-900 underline">Đăng nhập</Link>
         </p>
       </div>
     </div>

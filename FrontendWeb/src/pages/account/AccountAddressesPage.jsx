@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
-import { useToast } from '../../context/ToastContext';
 import { getJson, postJson, patchJson, deleteJson } from '../../services/apiClient';
 
 const emptyForm = {
@@ -27,7 +27,6 @@ function unlockBodyScroll() {
 
 export default function AccountAddressesPage() {
   const { token, user } = useAuth();
-  const { success: toastSuccess, error: toastError } = useToast();
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm);
@@ -37,17 +36,14 @@ export default function AccountAddressesPage() {
 const load = useCallback(async () => {
     if (!token) return;
     try {
-      // Gọi API thật từ Laravel
-      const response = await getJson('/api/v1/account/addresses', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await getJson('/account/addresses');
       // Lấy dữ liệu mảng từ backend
       const realData = response.data?.data || response.data;
       setList(Array.isArray(realData) ? realData : []);
     } catch (e) {
-      toastError('Không thể tải danh sách địa chỉ');
+      toast.error('Không thể tải danh sách địa chỉ');
     }
-  }, [token, toastError]);
+  }, [token]);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,13 +55,13 @@ const load = useCallback(async () => {
       try {
         await load();
       } catch (e) {
-        if (!cancelled) toastError(e.message);
+        if (!cancelled) toast.error(e.message);
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [token, load, toastError]);
+  }, [token, load]);
 
   const onChange = (ev) => {
     const { name, value, type, checked } = ev.target;
@@ -128,34 +124,28 @@ const load = useCallback(async () => {
       };
 
       if (editingId) {
-        await patchJson(`http://127.0.0.1:8000/api/v1/account/addresses/${editingId}`, body, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        toastSuccess('Đã cập nhật địa chỉ');
+        await patchJson(`/account/addresses/${editingId}`, body);
+        toast.success('Đã cập nhật địa chỉ');
       } else {
-        await postJson('http://127.0.0.1:8000/api/v1/account/addresses', body, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        toastSuccess('Đã thêm địa chỉ');
+        await postJson('/account/addresses', body);
+        toast.success('Đã thêm địa chỉ');
       }
       
       load();
       closeModal();
     } catch (err) {
-      toastError(err.message || 'Thao tác thất bại');
+      toast.error(err.message || 'Thao tác thất bại');
     }
   };
 
   const onDelete = async (id) => {
     if (!token || !window.confirm('Xóa địa chỉ này?')) return;
     try {
-      await deleteJson(`http://127.0.0.1:8000/api/v1/account/addresses/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await deleteJson(`/account/addresses/${id}`);
       setList((prev) => prev.filter((row) => row.id !== id));
-      toastSuccess('Đã xóa');
+      toast.success('Đã xóa');
     } catch (err) {
-      toastError(err.message || 'Xóa thất bại');
+      toast.error(err.message || 'Xóa thất bại');
     }
   };
 

@@ -8,7 +8,6 @@ import AccountFaqPage from "../pages/account/AccountFaqPage";
 import AccountOrdersPage from "../pages/account/AccountOrdersPage";
 import AccountProfilePage from "../pages/account/AccountProfilePage";
 import CartPage from "../pages/CartPage";
-import CheckoutPage from "../pages/CheckoutPage";
 import AdminRoutes from "../features/admin/routes/AdminRoutes";
 import HomePage from "../pages/HomePage";
 import LoginPage from "../pages/LoginPage";
@@ -24,7 +23,6 @@ export default function AppRoutes() {
       <Route path="/tim-kiem" element={<SearchResultsPage />} />
       <Route path="/gio-hang" element={<CartPage />} />
       <Route path="/thong-tin-nhan-hang" element={<ShippingInfoPage />} />
-      <Route path="/thanh-toan" element={<CheckoutPage />} />
       <Route path="/dat-hang-thanh-cong" element={<OrderSuccessPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />

@@ -44,7 +44,6 @@ npm run build
 ## Các component chính
 
 - **Header**: Thanh điều hướng với logo, search bar, menu
-- **Banner**: Banner khuyến mãi
 - **Sidebar**: Bộ lọc sản phẩm (thương hiệu, CPU, RAM, giá)
 - **ProductCard**: Card hiển thị thông tin sản phẩm
 - **ProductGrid**: Lưới hiển thị danh sách sản phẩm

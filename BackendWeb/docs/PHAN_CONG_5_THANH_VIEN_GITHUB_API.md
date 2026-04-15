@@ -11,7 +11,7 @@ Pham vi tai lieu: Backend (`BackendWeb`)
   - `feature/public-products-search`
   - `feature/admin-products-upload`
   - `feature/user-profile-address`
-  - `feature/orders-vouchers`
+  - `feature/orders`
 - Tao Pull Request vao `develop`, review cheo truoc khi merge.
 
 ## Phan cong theo 5 thanh vien
@@ -27,7 +27,7 @@ Pham vi tai lieu: Backend (`BackendWeb`)
   - `app/Http/Middleware/*` (neu bo sung)
   - `app/Models/User.php`
 - Nhiem vu:
-  - Dang ky, dang nhap JWT.
+  - Dang ky, dang nhap bang session.
   - Lay thong tin user hien tai (`me`), dang xuat.
   - Hoan thien validate + response format thong nhat.
 - API phu trach:
@@ -93,32 +93,17 @@ Pham vi tai lieu: Backend (`BackendWeb`)
   - `PATCH /api/v1/account/addresses/{id}`
   - `DELETE /api/v1/account/addresses/{id}`
 
-### 5) Thanh vien 5 - Don hang + Voucher
+### 5) Thanh vien 5 - Don hang
 
-- Nhanh GitHub: `feature/orders-vouchers`
+- Nhanh GitHub: `feature/orders`
 - Folder backend lam viec:
   - `app/Http/Controllers/Api/V1/OrderController.php` (tao moi)
-  - `app/Http/Controllers/Api/V1/Admin/OrderController.php` (tao moi)
-  - `app/Http/Controllers/Api/V1/VoucherController.php` (tao moi)
-  - `app/Http/Controllers/Api/V1/Admin/PromotionController.php` (tao moi)
   - `routes/api.php`
-  - `app/Models/Order.php`, `app/Models/Voucher.php` (neu chua co)
+  - `app/Models/Order.php` (neu chua co)
 - Nhiem vu:
   - Tao don hang tu checkout.
-  - User xem lich su don.
-  - Admin quan ly trang thai don.
-  - Admin CRUD voucher/khuyen mai + endpoint preview voucher.
 - API phu trach:
   - `POST /api/v1/orders`
-  - `GET /api/v1/account/orders`
-  - `GET /api/v1/admin/orders`
-  - `GET /api/v1/admin/orders/{id}`
-  - `PATCH /api/v1/admin/orders/{id}/status`
-  - `GET /api/v1/admin/promotions`
-  - `POST /api/v1/admin/promotions/vouchers`
-  - `PUT /api/v1/admin/promotions/vouchers/{id}`
-  - `DELETE /api/v1/admin/promotions/vouchers/{id}`
-  - `POST /api/v1/vouchers/preview`
 
 ---
 

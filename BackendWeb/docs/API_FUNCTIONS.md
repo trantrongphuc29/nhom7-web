@@ -3,7 +3,7 @@
 Tai lieu nay dung de giao viec va tich hop Frontend.
 Base URL mac dinh: `/api/v1`
 
-## 1) Auth va Phan quyen (JWT)
+## 1) Auth va Phan quyen (Session Cookie)
 
 ### POST `/auth/register`
 - Mo ta: Dang ky tai khoan moi.
@@ -24,7 +24,6 @@ Base URL mac dinh: `/api/v1`
   "success": true,
   "message": "Register successful",
   "data": {
-    "token": "jwt_token",
     "user": {
       "id": 1,
       "full_name": "Nguyen Van A",
@@ -36,7 +35,7 @@ Base URL mac dinh: `/api/v1`
 ```
 
 ### POST `/auth/login`
-- Mo ta: Dang nhap lay token JWT.
+- Mo ta: Dang nhap tao session cookie.
 - Auth: Khong can token.
 - Body:
 ```json
@@ -48,11 +47,11 @@ Base URL mac dinh: `/api/v1`
 
 ### GET `/auth/me`
 - Mo ta: Lay thong tin user hien tai.
-- Auth: `Authorization: Bearer <token>`
+- Auth: Yeu cau session cookie hop le.
 
 ### POST `/auth/logout`
-- Mo ta: Dang xuat (phia server tra success, token do client bo).
-- Auth: `Authorization: Bearer <token>`
+- Mo ta: Dang xuat va huy session.
+- Auth: Yeu cau session cookie hop le.
 
 ## 2) San pham Public (Storefront)
 
@@ -87,7 +86,7 @@ Base URL mac dinh: `/api/v1`
 ## 3) Quan tri San pham (Admin/Staff)
 
 Tat ca endpoint ben duoi deu can:
-- Auth: `Authorization: Bearer <token>`
+- Auth: Session cookie hop le
 - Role: `admin` hoac `staff`
 
 ### GET `/admin/products`
@@ -130,7 +129,7 @@ Tat ca endpoint ben duoi deu can:
 
 ### POST `/admin/uploads/images`
 - Mo ta: Upload nhieu anh len Cloudinary.
-- Auth: `Authorization: Bearer <token>` (admin/staff)
+- Auth: Session cookie hop le (admin/staff)
 - Content-Type: `multipart/form-data`
 - Form fields:
   - `images[]`: file image (bat buoc, toi da 5MB/anh)
@@ -177,38 +176,9 @@ Tat ca endpoint ben duoi deu can:
 ### POST `/orders`
 - Mo ta: Tao don hang tu checkout.
 
-### GET `/account/orders`
-- Mo ta: Danh sach don cua user.
-
-### GET `/admin/orders`
-### GET `/admin/orders/{id}`
-### PATCH `/admin/orders/{id}/status`
-- Mo ta: Quan tri don hang.
-
-## 7) Voucher/Khuyen mai - De trien khai tiep
-
-> Nhom nay chua code route/controller day du trong backend hien tai.
-
-### GET `/admin/promotions`
-### POST `/admin/promotions/vouchers`
-### PUT `/admin/promotions/vouchers/{id}`
-### DELETE `/admin/promotions/vouchers/{id}`
-- Mo ta: CRUD voucher o admin.
-
-### POST `/vouchers/preview`
-- Mo ta: Kiem tra voucher truoc khi dat hang.
-
-## Header Auth mau
-
-```
-Authorization: Bearer <jwt_token>
-Content-Type: application/json
-Accept: application/json
-```
-
 ## Quy uoc loi
 
-- `401`: Thieu token / token sai / het han.
+- `401`: Chua dang nhap hoac session het han.
 - `403`: Khong du quyen role.
 - `404`: Khong tim thay tai nguyen.
 - `422`: Loi validate input.

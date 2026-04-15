@@ -5,31 +5,22 @@ import { Toaster } from 'react-hot-toast';
 import './index.css';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
-import { ToastProvider } from './context/ToastContext';
 import { StoreConfigProvider } from './context/StoreConfigContext';
 import { CartProvider } from './context/CartContext';
-import ToastStack from './components/cart/ToastStack';
-import { setupMockServer } from './mocks/mockServer';
 
 const queryClient = new QueryClient();
-if (process.env.REACT_APP_USE_MOCK_SERVER === '1') {
-  setupMockServer();
-}
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <ToastProvider>
-          <StoreConfigProvider>
-            <CartProvider>
-              <App />
-              <ToastStack />
-              <Toaster position="top-right" />
-            </CartProvider>
-          </StoreConfigProvider>
-        </ToastProvider>
+        <StoreConfigProvider>
+          <CartProvider>
+            <App />
+            <Toaster position="top-right" />
+          </CartProvider>
+        </StoreConfigProvider>
       </AuthProvider>
     </QueryClientProvider>
   </React.StrictMode>

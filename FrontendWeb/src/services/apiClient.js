@@ -23,53 +23,17 @@ function normalizeMessage(error) {
   return error?.message || "Request failed";
 }
 
-async function requestViaMockServer(url, options = {}) {
-  // 🛑 BỘ LỌC THÔNG MINH: Chỉ tắt Mock đối với các API bạn đã làm xong ở Backend
-  if (url.includes('/api/v1/auth') || url.includes('/api/v1/account')) {
-    return null; // Bỏ qua Mock, chạy thẳng xuống Laravel
-  }
-
-  // GIỮ NGUYÊN CODE CŨ TỪ ĐÂY ĐỂ TRANG SẢN PHẨM KHÔNG BỊ SẬP GIAO DIỆN
-  if (typeof window === "undefined") return null;
-  const mockRequest = window.__lapstoreMockRequest;
-  if (typeof mockRequest !== "function") return null;
-
-  const init = {
-    method: options.method || "GET",
-    headers: options.headers || {},
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  };
-
-  const mockResponse = await mockRequest(url, init);
-  if (!mockResponse) return null;
-
-  let data = {};
-  try {
-    data = await mockResponse.json();
-  } catch {
-    data = {};
-  }
-
-  return {
-    status: mockResponse.status ?? 0,
-    data,
-  };
-}
-
-
 export async function requestJson(url, options = {}) {
   const method = (options.method || "GET").toUpperCase();
-  const token = localStorage.getItem("access_token");
 
   const config = {
     url,
     method,
     headers: {
       ...options.headers,
-      Authorization: token ? `Bearer ${token}` : "", 
     },
     data: options.body,
-    withCredentials: options.withCredentials,
+    withCredentials: options.withCredentials ?? true,
     params: options.params,
     timeout: options.timeout,
   };

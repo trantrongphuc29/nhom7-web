@@ -1,13 +1,15 @@
 import { API_ENDPOINTS } from "../config/api";
-import { postJson } from "./apiClient";
+import { getJson, postJson } from "./apiClient";
 
 /**
- * @param {object} body items, shipping, paymentMethod, voucherCode?
- * @param {string|null} token Bearer khi đã đăng nhập (guest: null)
+ * @param {object} body items, shipping, paymentMethod
  */
-export async function createStorefrontOrder(body, token) {
-  const data = await postJson(API_ENDPOINTS.ORDERS_CREATE, body, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
+export async function createStorefrontOrder(body) {
+  const data = await postJson(API_ENDPOINTS.ORDERS_CREATE, body);
   return data?.data ?? data;
+}
+
+export async function getAccountOrders() {
+  const data = await getJson(API_ENDPOINTS.ACCOUNT_ORDERS);
+  return data?.data ?? [];
 }

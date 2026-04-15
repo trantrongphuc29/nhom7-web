@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { mockData } from "../mocks/mockData";
+import { API_ENDPOINTS } from "../config/api";
+import { getJson } from "../services/apiClient";
 
 const FALLBACK = {
   defaultShippingFee: 50_000,
@@ -18,8 +19,8 @@ export function StoreConfigProvider({ children }) {
     let cancelled = false;
     (async () => {
       try {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        const d = mockData.storeConfig || {};
+        const response = await getJson(API_ENDPOINTS.STORE_CONFIG, { skipAuthHandling: true });
+        const d = response?.data || response || {};
         if (cancelled) return;
         setConfig({
           defaultShippingFee: Number(d.defaultShippingFee) || FALLBACK.defaultShippingFee,

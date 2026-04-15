@@ -2,25 +2,26 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import toast from "react-hot-toast";
 import { BACKEND_BASE_URL } from "../config/api";
 import { useCart } from "../context/CartContext";
 import { useStoreConfig } from "../context/StoreConfigContext";
 import { useAuth } from "../context/AuthContext";
-import { useToast } from "../context/ToastContext";
+import { getJson } from "../services/apiClient";
+import { createStorefrontOrder } from "../services/orders.service";
 import { fmtPrice } from "../utils/format";
-import { saveShippingDraft, loadShippingDraft } from "../utils/checkoutFlow";
-import { mockData } from "../mocks/mockData";
+import { clearShippingDraft, loadShippingDraft, ORDER_SUCCESS_FLAG, ORDER_SUCCESS_ORDER_CODE, saveShippingDraft } from "../utils/checkoutFlow";
 
 export default function ShippingInfoPage() {
   const { freeShippingThreshold } = useStoreConfig();
-  const { items, totals, allInStock } = useCart();
+  const { items, totals, allInStock, clear } = useCart();
   const { isAuthenticated, token, user } = useAuth();
-  const { error: toastError } = useToast();
   const navigate = useNavigate();
   const [shipName, setShipName] = useState("");
   const [shipPhone, setShipPhone] = useState("");
   const [shipAddress, setShipAddress] = useState("");
   const [prefilledFromAccount, setPrefilledFromAccount] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (items.length === 0) {
@@ -40,10 +41,13 @@ export default function ShippingInfoPage() {
     let cancelled = false;
     (async () => {
       try {
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        const [profileRes, addressesRes] = await Promise.all([
+          getJson("/account/profile", { skipAuthHandling: true }),
+          getJson("/account/addresses", { skipAuthHandling: true }),
+        ]);
         if (cancelled) return;
-        const profile = mockData.accountProfile || {};
-        const addresses = mockData.accountAddresses || [];
+        const profile = profileRes?.data || profileRes || {};
+        const addresses = addressesRes?.data || addressesRes || [];
         const rows = Array.isArray(addresses) ? addresses : [];
         const defaultAddress = rows.find((a) => Boolean(a?.isDefault)) || rows[0] || null;
 
@@ -80,15 +84,15 @@ export default function ShippingInfoPage() {
 
   const validate = () => {
     if (!shipName.trim()) {
-      toastError("Vui lòng nhập họ tên người nhận.");
+      toast.error("Vui lòng nhập họ tên người nhận.");
       return false;
     }
     if (!shipPhone.trim() || shipPhone.replace(/\D/g, "").length < 9) {
-      toastError("Vui lòng nhập số điện thoại hợp lệ.");
+      toast.error("Vui lòng nhập số điện thoại hợp lệ.");
       return false;
     }
     if (!shipAddress.trim()) {
-      toastError("Vui lòng nhập địa chỉ nhận hàng.");
+      toast.error("Vui lòng nhập địa chỉ nhận hàng.");
       return false;
     }
     return true;
@@ -101,16 +105,48 @@ export default function ShippingInfoPage() {
     shipAddress: shipAddress.trim(),
   });
 
-  const continueToPayment = () => {
+  const continueToPayment = async () => {
     if (items.length === 0) return;
     if (!allInStock) {
-      toastError("Sản phẩm đã hết hàng");
+      toast.error("Sản phẩm đã hết hàng");
       return;
     }
     if (!validate()) return;
-    const payload = buildPayload();
-    saveShippingDraft(payload);
-    navigate("/thanh-toan", { state: { shipping: payload } });
+    const shipping = buildPayload();
+    saveShippingDraft(shipping);
+    setSubmitting(true);
+    try {
+      const payload = {
+        items: items.map((li) => ({
+          productId: li.productId,
+          variantId: li.variantId,
+          quantity: li.quantity,
+          name: li.name,
+          specSummary: li.specSummary,
+        })),
+        shipping,
+        paymentMethod: "cod",
+      };
+      const result = await createStorefrontOrder(payload);
+      const code = result?.orderCode != null ? String(result.orderCode) : "";
+      try {
+        sessionStorage.setItem(ORDER_SUCCESS_FLAG, "1");
+        if (code) sessionStorage.setItem(ORDER_SUCCESS_ORDER_CODE, code);
+        else sessionStorage.removeItem(ORDER_SUCCESS_ORDER_CODE);
+      } catch {
+        // ignore sessionStorage errors
+      }
+      clear();
+      clearShippingDraft();
+      navigate("/dat-hang-thanh-cong", {
+        replace: true,
+        state: { orderCode: code || null },
+      });
+    } catch (e) {
+      toast.error(e?.message || "Không tạo được đơn hàng. Vui lòng thử lại.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (items.length === 0) {
@@ -121,8 +157,8 @@ export default function ShippingInfoPage() {
     <div className="bg-slate-50 font-display text-slate-900 min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 max-w-7xl mx-auto px-4 py-6 w-full pb-10">
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">Thông tin nhận hàng</h1>
-        <p className="text-sm text-slate-600 mb-6">Điền thông tin liên hệ để giao hàng.</p>
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">Thông tin thanh toán</h1>
+        <p className="text-sm text-slate-600 mb-6">Điền thông tin nhận hàng và xác nhận đặt hàng ngay.</p>
 
         <div className="flex gap-8 items-start">
           <div className="flex-1 w-full min-w-0 space-y-6">
@@ -206,10 +242,6 @@ export default function ShippingInfoPage() {
                   <span className="font-medium tabular-nums">{fmtPrice(totals.subtotal)}₫</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-600">Khuyến mãi</span>
-                  <span className="font-medium text-rose-600 tabular-nums">-{fmtPrice(totals.discount)}₫</span>
-                </div>
-                <div className="flex justify-between">
                   <span className="text-slate-600">Phí vận chuyển</span>
                   <span className="font-medium tabular-nums">
                     {totals.shippingFee === 0 ? <span className="text-emerald-600 font-bold">Miễn phí</span> : `${fmtPrice(totals.shippingFee)}₫`}
@@ -232,9 +264,10 @@ export default function ShippingInfoPage() {
               <button
                 type="button"
                 onClick={continueToPayment}
-                className="mt-5 w-full rounded-xl bg-slate-900 text-white py-3.5 font-bold text-base hover:bg-slate-800 transition"
+                disabled={submitting}
+                className="mt-5 w-full rounded-xl bg-slate-900 text-white py-3.5 font-bold text-base hover:bg-slate-800 transition disabled:opacity-60 disabled:pointer-events-none"
               >
-                Tiếp tục thanh toán
+                {submitting ? "Đang xử lý..." : "Đặt hàng"}
               </button>
             </div>
           </aside>

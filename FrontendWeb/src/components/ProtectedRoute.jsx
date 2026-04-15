@@ -4,7 +4,11 @@ import { useAuth } from '../context/AuthContext';
 import { isStaffRole, normalizeRole } from '../features/admin/utils/rbac';
 
 function ProtectedRoute({ children, allowedRoles = [] }) {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isInitializing, user } = useAuth();
+
+  if (isInitializing) {
+    return <div className="p-4 text-sm text-slate-500">Đang kiểm tra phiên đăng nhập...</div>;
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;

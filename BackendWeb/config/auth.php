@@ -9,13 +9,12 @@ return [
     | Authentication Defaults
     |--------------------------------------------------------------------------
     |
-    | Ở đây chúng ta đổi mặc định sang 'api' để Laravel biết là 
-    | ứng dụng này ưu tiên xác thực qua Token thay vì Session.
+    | Ứng dụng sử dụng guard `web` với session để xác thực người dùng.
     |
     */
 
     'defaults' => [
-        'guard' => 'api', 
+        'guard' => 'web',
         'passwords' => 'users',
     ],
 
@@ -24,18 +23,13 @@ return [
     | Authentication Guards
     |--------------------------------------------------------------------------
     |
-    | Đây là phần quan trọng nhất: Khai báo guard 'api' sử dụng driver 'jwt'.
+    | Guard mặc định cho ứng dụng là session-based.
     |
     */
 
    'guards' => [
         'web' => [
             'driver' => 'session',
-            'provider' => 'users',
-        ],
-
-        'api' => [
-            'driver' => 'jwt', // Phải có dòng này thì JWT mới chạy
             'provider' => 'users',
         ],
     ],

@@ -1,11 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
-import { useToast } from '../../context/ToastContext';
 import { getJson, patchJson, postJson } from '../../services/apiClient';
-
-function authOpts(token) {
-  return { headers: { Authorization: `Bearer ${token}` } };
-}
 
 function isAuthFailureMessage(msg) {
   const m = String(msg || '').toLowerCase();
@@ -24,7 +20,6 @@ export default function AccountProfilePage() {
 
   const { token, setUser} = useAuth();
 
-  const { success: toastSuccess, error: toastError } = useToast();
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -45,7 +40,7 @@ export default function AccountProfilePage() {
     (async () => {
       if (!token) { setLoading(false); return; }
       try {
-        const data = await getJson('http://127.0.0.1:8000/api/v1/account/profile', authOpts(token));
+        const data = await getJson('/account/profile');
         const p = data?.data || data;
         if (!cancelled) {
           // LẤY ĐÚNG CỘT full_name CỦA LARAVEL
@@ -57,13 +52,13 @@ export default function AccountProfilePage() {
           setBaseline({ fullName: fn, phone: ph });
         }
       } catch (e) {
-        if (!cancelled && !isAuthFailureMessage(e?.message)) toastError(e.message || 'Lỗi tải hồ sơ');
+        if (!cancelled && !isAuthFailureMessage(e?.message)) toast.error(e.message || 'Lỗi tải hồ sơ');
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [token, toastError]);
+  }, [token]);
 
   const onSave = async (e) => {
     e.preventDefault();
@@ -71,11 +66,7 @@ export default function AccountProfilePage() {
     setSaving(true);
     try {
       // GỬI ĐÚNG BIẾN full_name XUỐNG CHO LARAVEL
-      const response = await patchJson(
-        'http://127.0.0.1:8000/api/v1/account/profile',
-        { full_name: fullName.trim(), phone: phone.trim() },
-        authOpts(token)
-      );
+        const response = await patchJson('/account/profile', { full_name: fullName.trim(), phone: phone.trim() });
       
       // Cập nhật lại góc trái màn hình ngay lập tức
       if (response.data?.data) {
@@ -85,9 +76,9 @@ export default function AccountProfilePage() {
       }
 
       setBaseline({ fullName: fullName.trim(), phone: phone.trim() });
-      toastSuccess('Đã lưu thông tin');
+      toast.success('Đã lưu thông tin');
     } catch (err) {
-      if (!isAuthFailureMessage(err?.message)) toastError(err.message || 'Cập nhật thất bại');
+      if (!isAuthFailureMessage(err?.message)) toast.error(err.message || 'Cập nhật thất bại');
     } finally {
       setSaving(false);
     }
@@ -102,23 +93,19 @@ export default function AccountProfilePage() {
     e.preventDefault();
     if (!token) return;
     if (pwd.next !== pwd.confirm) {
-      toastError('Mật khẩu mới không khớp');
+      toast.error('Mật khẩu mới không khớp');
       return;
     }
     try {
-      await postJson(
-        'http://127.0.0.1:8000/api/v1/account/password',
-        {
-          current_password: pwd.current, // GỬI ĐÚNG BIẾN current_password
-          new_password: pwd.next,        // GỬI ĐÚNG BIẾN new_password
-        },
-        authOpts(token)
-      );
-      toastSuccess('Đã đổi mật khẩu');
+      await postJson('/account/password', {
+        current_password: pwd.current,
+        new_password: pwd.next,
+      });
+      toast.success('Đã đổi mật khẩu');
       setPwdOpen(false);
       setPwd({ current: '', next: '', confirm: '' });
     } catch (err) {
-      if (!isAuthFailureMessage(err?.message)) toastError(err.message || 'Đổi mật khẩu thất bại');
+      if (!isAuthFailureMessage(err?.message)) toast.error(err.message || 'Đổi mật khẩu thất bại');
     }
   };
 

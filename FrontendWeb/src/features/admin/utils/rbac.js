@@ -8,7 +8,7 @@ export function isStaffRole(role) {
 }
 
 export function getStaffHomePath() {
-  return "/admin";
+  return "/admin/products";
 }
 
 export function isRetailCustomerRole(role) {

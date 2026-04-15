@@ -1,41 +1,68 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { postJson } from '../services/apiClient';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { API_ENDPOINTS } from '../config/api';
+import { getJson, postJson } from '../services/apiClient';
+import { AUTH_UNAUTHORIZED_EVENT } from '../utils/authSession';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  // 1. Đọc dữ liệu từ localStorage để F5 không bị mất
-  const [token, setToken] = useState(() => localStorage.getItem('access_token') || '');
-  const [user, setUser] = useState(() => {
-    try {
-      const savedUser = localStorage.getItem('user_info');
-      return savedUser ? JSON.parse(savedUser) : null;
-    } catch {
+  const [token, setToken] = useState('');
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  const applySessionUser = useCallback((sessionUser) => {
+    if (!sessionUser) {
+      setToken('');
+      setUser(null);
+      localStorage.removeItem('user_info');
       return null;
     }
-  });
-  const [isLoading, setIsLoading] = useState(false);
+
+    const mappedUser = { ...sessionUser, fullName: sessionUser.full_name || sessionUser.fullName || '' };
+    setToken('session');
+    setUser(mappedUser);
+    localStorage.setItem('user_info', JSON.stringify(mappedUser));
+    return mappedUser;
+  }, []);
 
   const refreshUser = useCallback(async () => {
-    return user;
-  }, [user]);
+    try {
+      const response = await getJson(API_ENDPOINTS.AUTH_ME, { skipAuthHandling: true });
+      return applySessionUser(response?.data ?? response);
+    } catch {
+      applySessionUser(null);
+      return null;
+    }
+  }, [applySessionUser]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      try {
+        await refreshUser();
+      } finally {
+        if (mounted) setIsInitializing(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [refreshUser]);
+
+  useEffect(() => {
+    const onUnauthorized = () => applySessionUser(null);
+    window.addEventListener(AUTH_UNAUTHORIZED_EVENT, onUnauthorized);
+    return () => window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, onUnauthorized);
+  }, [applySessionUser]);
 
   const login = async (email, password) => {
     setIsLoading(true);
     try {
-      const response = await postJson('http://127.0.0.1:8000/api/v1/auth/login', { email, password });
-      const { token, user: backendUser } = response.data; 
-      
-      // Đồng bộ tên để Frontend hiểu
-      const mappedUser = { ...backendUser, fullName: backendUser.full_name };
-      
-      setToken(token);
-      setUser(mappedUser);
-      // 2. Lưu vào bộ nhớ máy tính
-      localStorage.setItem('access_token', token);
-      localStorage.setItem('user_info', JSON.stringify(mappedUser));
-      
-      return mappedUser;
+      const response = await postJson(API_ENDPOINTS.AUTH_LOGIN, { email, password }, { skipAuthHandling: true });
+      return applySessionUser(response?.data?.user ?? response?.user ?? null);
     } catch (error) {
       throw new Error(error.message || 'Đăng nhập thất bại');
     } finally {
@@ -43,29 +70,39 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const register = async (email, password, confirmPassword) => {
+  const register = async (fullName, email, password, confirmPassword) => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      return { success: true };
+      const response = await postJson(API_ENDPOINTS.AUTH_REGISTER, {
+        full_name: fullName,
+        email,
+        password,
+        password_confirmation: confirmPassword,
+      }, { skipAuthHandling: true });
+      return applySessionUser(response?.data?.user ?? response?.user ?? null);
+    } catch (error) {
+      throw new Error(error.message || 'Đăng ký thất bại');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    setToken('');
-    setUser(null);
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user_info');
-  };
+  const logout = useCallback(async () => {
+    try {
+      await postJson(API_ENDPOINTS.AUTH_LOGOUT, {}, { skipAuthHandling: true });
+    } catch {
+      // Session có thể đã hết hạn, vẫn xoá local state.
+    } finally {
+      applySessionUser(null);
+    }
+  }, [applySessionUser]);
 
   const value = useMemo(
     () => ({
-      token, user, isAuthenticated: Boolean(token && user),
-      isLoading, login, register, logout, refreshUser, setUser // Thêm setUser vào đây
+      token, user, isAuthenticated: Boolean(user), isInitializing,
+      isLoading, login, register, logout, refreshUser, setUser: applySessionUser
     }),
-    [token, user, isLoading, refreshUser]
+    [token, user, isLoading, isInitializing, login, register, logout, refreshUser, applySessionUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -37,11 +37,9 @@ CREATE TABLE IF NOT EXISTS `orders` (
   `user_id` bigint UNSIGNED DEFAULT NULL,
   `status` enum('pending','confirmed','shipping','completed','cancelled') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
   `payment_method` enum('cod','bank_transfer','card') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'cod',
-  `voucher_id` bigint UNSIGNED DEFAULT NULL,
   `subtotal_amount` int NOT NULL DEFAULT '0',
   `shipping_fee` int NOT NULL DEFAULT '0',
   `discount_amount` int NOT NULL DEFAULT '0',
-  `voucher_discount_amount` int NOT NULL DEFAULT '0',
   `total_amount` int NOT NULL DEFAULT '0',
   `ship_recipient_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `ship_phone` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -56,16 +54,15 @@ CREATE TABLE IF NOT EXISTS `orders` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_orders_code` (`code`),
   KEY `idx_orders_user` (`user_id`),
-  KEY `idx_orders_status_created` (`status`,`created_at`),
-  KEY `idx_orders_voucher` (`voucher_id`)
+  KEY `idx_orders_status_created` (`status`,`created_at`)
 ) ENGINE=InnoDB AUTO_INCREMENT=9002 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Đang đổ dữ liệu cho bảng `orders`
 --
 
-INSERT INTO `orders` (`id`, `code`, `user_id`, `status`, `payment_method`, `voucher_id`, `subtotal_amount`, `shipping_fee`, `discount_amount`, `voucher_discount_amount`, `total_amount`, `ship_recipient_name`, `ship_phone`, `ship_line1`, `ship_line2`, `ship_ward`, `ship_district`, `ship_province`, `customer_email`, `created_at`, `updated_at`) VALUES
-(9001, 'ODR-001', 2, 'pending', 'cod', NULL, 0, 0, 0, 0, 35000000, 'Nguyễn Văn Khách', '0901234567', 'Số 1 Lý Tự Trọng', NULL, NULL, NULL, 'Hồ Chí Minh', NULL, '2026-04-12 10:27:40', '2026-04-12 10:27:40');
+INSERT INTO `orders` (`id`, `code`, `user_id`, `status`, `payment_method`, `subtotal_amount`, `shipping_fee`, `discount_amount`, `total_amount`, `ship_recipient_name`, `ship_phone`, `ship_line1`, `ship_line2`, `ship_ward`, `ship_district`, `ship_province`, `customer_email`, `created_at`, `updated_at`) VALUES
+(9001, 'ODR-001', 2, 'pending', 'cod', 0, 0, 0, 35000000, 'Nguyễn Văn Khách', '0901234567', 'Số 1 Lý Tự Trọng', NULL, NULL, NULL, 'Hồ Chí Minh', NULL, '2026-04-12 10:27:40', '2026-04-12 10:27:40');
 
 -- --------------------------------------------------------
 
@@ -247,7 +244,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 --
 
 INSERT INTO `users` (`id`, `email`, `password_hash`, `full_name`, `phone`, `role`, `status`, `loyalty_points`, `created_at`, `updated_at`) VALUES
-(1, 'admin@gmail.com', '123456', 'Quản trị viên', NULL, 'admin', 'active', 0, '2026-04-12 10:27:40', '2026-04-12 10:42:37'),
+(1, 'admin@gmail.com', '$2y$10$ydseodrBzbZek.zAGIJKseACw48P4Df/c0oRoIiLRTh9QSKTFGV/G', 'Quản trị viên', NULL, 'admin', 'active', 0, '2026-04-12 10:27:40', '2026-04-12 10:42:37'),
 (2, 'user@gmail.com', NULL, 'Nguyễn Văn Khách', NULL, 'user', 'active', 0, '2026-04-12 10:27:40', '2026-04-12 10:27:40');
 
 -- --------------------------------------------------------
@@ -277,32 +274,6 @@ CREATE TABLE IF NOT EXISTS `user_addresses` (
 
 -- --------------------------------------------------------
 
---
--- Cấu trúc bảng cho bảng `vouchers`
---
-
-DROP TABLE IF EXISTS `vouchers`;
-CREATE TABLE IF NOT EXISTS `vouchers` (
-  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `discount_type` enum('fixed','percent') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `discount_value` int NOT NULL,
-  `max_discount_amount` int DEFAULT NULL,
-  `min_order_amount` int DEFAULT NULL,
-  `usage_limit` int DEFAULT NULL,
-  `used_count` int NOT NULL DEFAULT '0',
-  `start_at` datetime DEFAULT NULL,
-  `end_at` datetime DEFAULT NULL,
-  `status` enum('active','inactive') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_vouchers_code` (`code`),
-  KEY `idx_vouchers_status_time` (`status`,`start_at`,`end_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
 -- Các ràng buộc cho các bảng đã đổ
 --
 
@@ -310,8 +281,7 @@ CREATE TABLE IF NOT EXISTS `vouchers` (
 -- Các ràng buộc cho bảng `orders`
 --
 ALTER TABLE `orders`
-  ADD CONSTRAINT `fk_orders_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_orders_voucher` FOREIGN KEY (`voucher_id`) REFERENCES `vouchers` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_orders_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Các ràng buộc cho bảng `order_items`

@@ -5,9 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Tymon\JWTAuth\Contracts\JWTSubject; // Interface bắt buộc để dùng JWT
 
-class User extends Authenticatable implements JWTSubject
+class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
@@ -52,26 +51,4 @@ class User extends Authenticatable implements JWTSubject
         return $this->password_hash;
     }
 
-    // =========================================================================
-    // CÁC PHƯƠNG THỨC BẮT BUỘC CỦA JWT
-    // =========================================================================
-
-    /**
-     * Lấy định danh người dùng (thường là khóa chính ID)
-     */
-    public function getJWTIdentifier()
-    {
-        return $this->getKey();
-    }
-
-    /**
-     * Lưu thêm thông tin tùy chỉnh vào bên trong Token (Payload)
-     * Ở đây chúng ta lưu 'role' để Middleware có thể kiểm tra quyền Admin/Staff nhanh chóng
-     */
-    public function getJWTCustomClaims()
-    {
-        return [
-            'role' => $this->role,
-        ];
-    }
 }

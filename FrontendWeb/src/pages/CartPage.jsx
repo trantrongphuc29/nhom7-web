@@ -2,10 +2,10 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import toast from "react-hot-toast";
 import { BACKEND_BASE_URL } from "../config/api";
 import { useCart, stockStatus } from "../context/CartContext";
 import { useStoreConfig } from "../context/StoreConfigContext";
-import { useToast } from "../context/ToastContext";
 import { fmtPrice } from "../utils/format";
 
 function StockTag({ stock, qty }) {
@@ -20,7 +20,6 @@ function StockTag({ stock, qty }) {
 export default function CartPage() {
   const { freeShippingThreshold } = useStoreConfig();
   const { items, updateQuantity, removeLine, totals, allInStock } = useCart();
-  const { error: toastError } = useToast();
   const navigate = useNavigate();
   const [selected, setSelected] = useState(() => new Set(items.map((i) => i.lineId)));
   const [updating, setUpdating] = useState({});
@@ -66,7 +65,7 @@ export default function CartPage() {
   const goCheckout = () => {
     if (items.length === 0) return;
     if (!allInStock) {
-      toastError("Sản phẩm đã hết hàng");
+      toast.error("Sản phẩm đã hết hàng");
       return;
     }
     navigate("/thong-tin-nhan-hang");
@@ -191,11 +190,9 @@ export default function CartPage() {
                             Xóa
                           </button>
                         </div>
-                        <p className="mt-2 text-xs text-slate-500 hidden">{fmtPrice(li.price)}₫ / sản phẩm</p>
                       </div>
                       <div className="min-w-[120px] shrink-0 text-right block">
-                        <p className="text-lg font-bold tabular-nums text-rose-600">{fmtPrice(li.price * li.quantity)}₫</p>
-                        <p className="mt-1 text-xs text-slate-500">{fmtPrice(li.price)}₫ / sản phẩm</p>
+                        <p className="text-lg font-bold tabular-nums text-rose-600">{fmtPrice(li.price)}₫</p>
                       </div>
                     </div>
                   </div>
@@ -210,10 +207,6 @@ export default function CartPage() {
                   <div className="flex justify-between">
                     <span className="text-slate-600">Tạm tính</span>
                     <span className="font-medium tabular-nums">{fmtPrice(totals.subtotal)}₫</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">Khuyến mãi</span>
-                    <span className="font-medium text-rose-600 tabular-nums">-{fmtPrice(totals.discount)}₫</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600">Phí vận chuyển</span>
