@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { API_ENDPOINTS } from '../../config/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { getJson, patchJson, postJson } from '../../services/apiClient';
@@ -22,7 +21,7 @@ function FieldIcon({ children }) {
 }
 
 export default function AccountProfilePage() {
-  const { token, refreshUser } = useAuth();
+  const { token, setUser} = useAuth();
   const { success: toastSuccess, error: toastError } = useToast();
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -39,18 +38,16 @@ export default function AccountProfilePage() {
     return fn !== baseline.fullName.trim() || ph !== baseline.phone.trim();
   }, [fullName, phone, baseline]);
 
-  useEffect(() => {
+ useEffect(() => {
     let cancelled = false;
     (async () => {
-      if (!token) {
-        setLoading(false);
-        return;
-      }
+      if (!token) { setLoading(false); return; }
       try {
-        const data = await getJson(API_ENDPOINTS.ACCOUNT_PROFILE, authOpts(token));
+        const data = await getJson('http://127.0.0.1:8000/api/v1/account/profile', authOpts(token));
         const p = data?.data || data;
         if (!cancelled) {
-          const fn = p.fullName || '';
+          // LẤY ĐÚNG CỘT full_name CỦA LARAVEL
+          const fn = p.full_name || p.fullName || '';
           const ph = p.phone || '';
           setFullName(fn);
           setPhone(ph);
@@ -58,16 +55,12 @@ export default function AccountProfilePage() {
           setBaseline({ fullName: fn, phone: ph });
         }
       } catch (e) {
-        if (!cancelled && !isAuthFailureMessage(e?.message)) {
-          toastError(e.message || 'Lỗi tải hồ sơ');
-        }
+        if (!cancelled && !isAuthFailureMessage(e?.message)) toastError(e.message || 'Lỗi tải hồ sơ');
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [token, toastError]);
 
   const onSave = async (e) => {
@@ -75,20 +68,24 @@ export default function AccountProfilePage() {
     if (!token || !dirty) return;
     setSaving(true);
     try {
-      await patchJson(
-        API_ENDPOINTS.ACCOUNT_PROFILE,
-        { fullName: fullName.trim(), phone: phone.trim() },
+      // GỬI ĐÚNG BIẾN full_name XUỐNG CHO LARAVEL
+      const response = await patchJson(
+        'http://127.0.0.1:8000/api/v1/account/profile',
+        { full_name: fullName.trim(), phone: phone.trim() },
         authOpts(token)
       );
-      await refreshUser();
-      const nextFn = fullName.trim();
-      const nextPh = phone.trim();
-      setBaseline({ fullName: nextFn, phone: nextPh });
+      
+      // Cập nhật lại góc trái màn hình ngay lập tức
+      if (response.data?.data) {
+        const updatedUser = { ...response.data.data, fullName: response.data.data.full_name };
+        setUser(updatedUser);
+        localStorage.setItem('user_info', JSON.stringify(updatedUser));
+      }
+
+      setBaseline({ fullName: fullName.trim(), phone: phone.trim() });
       toastSuccess('Đã lưu thông tin');
     } catch (err) {
-      if (!isAuthFailureMessage(err?.message)) {
-        toastError(err.message || 'Cập nhật thất bại');
-      }
+      if (!isAuthFailureMessage(err?.message)) toastError(err.message || 'Cập nhật thất bại');
     } finally {
       setSaving(false);
     }
@@ -108,11 +105,10 @@ export default function AccountProfilePage() {
     }
     try {
       await postJson(
-        API_ENDPOINTS.ACCOUNT_PASSWORD,
+        'http://127.0.0.1:8000/api/v1/account/password',
         {
-          currentPassword: pwd.current,
-          newPassword: pwd.next,
-          confirmPassword: pwd.confirm,
+          current_password: pwd.current, // GỬI ĐÚNG BIẾN current_password
+          new_password: pwd.next,        // GỬI ĐÚNG BIẾN new_password
         },
         authOpts(token)
       );
@@ -120,17 +116,13 @@ export default function AccountProfilePage() {
       setPwdOpen(false);
       setPwd({ current: '', next: '', confirm: '' });
     } catch (err) {
-      if (!isAuthFailureMessage(err?.message)) {
-        toastError(err.message || 'Đổi mật khẩu thất bại');
-      }
+      if (!isAuthFailureMessage(err?.message)) toastError(err.message || 'Đổi mật khẩu thất bại');
     }
   };
 
   const inputRing = 'focus:outline-none focus:ring-2 focus:ring-[#CCFF00]/80 focus:border-[#CCFF00]';
 
-  if (loading) {
-    return <p className="text-slate-500 text-sm">Đang tải…</p>;
-  }
+  if (loading) return <p className="text-slate-500 text-sm">Đang tải…</p>;
 
   return (
     <div>
@@ -174,28 +166,15 @@ export default function AccountProfilePage() {
         <div className="flex flex-wrap items-center gap-3 pt-2">
           {dirty ? (
             <>
-              <button
-                type="submit"
-                disabled={saving}
-                className="px-6 py-2.5 rounded-full bg-black text-white font-semibold text-sm shadow-md disabled:opacity-60"
-              >
+              <button type="submit" disabled={saving} className="px-6 py-2.5 rounded-full bg-black text-white font-semibold text-sm shadow-md disabled:opacity-60">
                 {saving ? 'Đang lưu…' : 'Lưu'}
               </button>
-              <button
-                type="button"
-                onClick={onCancel}
-                disabled={saving}
-                className="px-6 py-2.5 rounded-full border border-slate-300 text-slate-800 font-semibold text-sm hover:bg-slate-50 disabled:opacity-60"
-              >
+              <button type="button" onClick={onCancel} disabled={saving} className="px-6 py-2.5 rounded-full border border-slate-300 text-slate-800 font-semibold text-sm hover:bg-slate-50 disabled:opacity-60">
                 Hủy
               </button>
             </>
           ) : null}
-          <button
-            type="button"
-            onClick={() => setPwdOpen(true)}
-            className="px-6 py-2.5 rounded-full border border-slate-300 text-slate-800 font-semibold text-sm hover:bg-slate-50"
-          >
+          <button type="button" onClick={() => setPwdOpen(true)} className="px-6 py-2.5 rounded-full border border-slate-300 text-slate-800 font-semibold text-sm hover:bg-slate-50">
             Đổi mật khẩu
           </button>
         </div>
@@ -206,45 +185,12 @@ export default function AccountProfilePage() {
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
             <h3 className="text-lg font-bold text-slate-900 mb-4">Đổi mật khẩu</h3>
             <form onSubmit={onChangePassword} className="space-y-4">
-              <input
-                type="password"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#CCFF00]/80"
-                placeholder="Mật khẩu hiện tại"
-                value={pwd.current}
-                onChange={(e) => setPwd((p) => ({ ...p, current: e.target.value }))}
-                required
-              />
-              <input
-                type="password"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#CCFF00]/80"
-                placeholder="Mật khẩu mới"
-                value={pwd.next}
-                onChange={(e) => setPwd((p) => ({ ...p, next: e.target.value }))}
-                required
-                minLength={3}
-              />
-              <input
-                type="password"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#CCFF00]/80"
-                placeholder="Nhập lại mật khẩu mới"
-                value={pwd.confirm}
-                onChange={(e) => setPwd((p) => ({ ...p, confirm: e.target.value }))}
-                required
-              />
+              <input type="password" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#CCFF00]/80" placeholder="Mật khẩu hiện tại" value={pwd.current} onChange={(e) => setPwd((p) => ({ ...p, current: e.target.value }))} required />
+              <input type="password" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#CCFF00]/80" placeholder="Mật khẩu mới" value={pwd.next} onChange={(e) => setPwd((p) => ({ ...p, next: e.target.value }))} required minLength={3} />
+              <input type="password" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#CCFF00]/80" placeholder="Nhập lại mật khẩu mới" value={pwd.confirm} onChange={(e) => setPwd((p) => ({ ...p, confirm: e.target.value }))} required />
               <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700"
-                  onClick={() => setPwdOpen(false)}
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-[#CCFF00] text-black font-semibold border border-[#b8e600]"
-                >
-                  Xác nhận
-                </button>
+                <button type="button" className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700" onClick={() => setPwdOpen(false)}>Hủy</button>
+                <button type="submit" className="px-4 py-2 rounded-xl bg-[#CCFF00] text-black font-semibold border border-[#b8e600]">Xác nhận</button>
               </div>
             </form>
           </div>

@@ -28,14 +28,20 @@ return [
     |
     */
 
-    'guards' => [
+   'guards' => [
         'web' => [
             'driver' => 'session',
             'provider' => 'users',
         ],
 
+<<<<<<< HEAD
         'api' => [
             'driver' => 'jwt', // Phải có dòng này thì JWT mới chạy
+=======
+        // BẠN COPY VÀ PASTE THÊM ĐOẠN NÀY VÀO NHÉ
+        'api' => [
+            'driver' => 'jwt',
+>>>>>>> 9f13fa83b9401ffead9746ad8b7d81ee236cc391
             'provider' => 'users',
         ],
     ],

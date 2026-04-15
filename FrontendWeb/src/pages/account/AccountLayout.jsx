@@ -3,7 +3,6 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { useAuth } from '../../context/AuthContext';
-import { API_ENDPOINTS } from '../../config/api';
 import { getJson } from '../../services/apiClient';
 
 function greetingText() {
@@ -20,7 +19,6 @@ function greetingIconSrc() {
   return "https://api.iconify.design/twemoji:crescent-moon.svg";
 }
 
-/** Sidebar: pill gọn, active = nền xanh mint đặc, chữ + icon đen đậm */
 const navClass = ({ isActive }) =>
   [
     'flex items-center gap-2.5 pl-3 pr-3 py-2 rounded-full text-sm transition-colors border border-transparent',
@@ -33,8 +31,9 @@ export default function AccountLayout() {
   const navigate = useNavigate();
   const { user, token, logout } = useAuth();
   const [profileName, setProfileName] = useState('');
+  
   const displayName = useMemo(
-    () => profileName?.trim() || user?.fullName?.trim() || user?.email?.split('@')[0] || 'Bạn',
+    () => profileName?.trim() || user?.full_name?.trim() || user?.fullName?.trim() || user?.email?.split('@')[0] || 'Bạn',
     [profileName, user]
   );
 
@@ -43,14 +42,16 @@ export default function AccountLayout() {
     (async () => {
       if (!token) return;
       try {
-        const json = await getJson(API_ENDPOINTS.ACCOUNT_PROFILE, {
+        // 1. ÉP GỌI SANG LARAVEL (CỔNG 8000) ĐỂ KHÔNG BỊ DÍNH MOCK DATA
+        const json = await getJson('http://127.0.0.1:8000/api/v1/account/profile', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (cancelled) return;
         const p = json?.data || json;
-        setProfileName(p?.fullName || '');
+        // 2. LẤY ĐÚNG CỘT full_name TỪ DATABASE
+        setProfileName(p?.full_name || p?.fullName || '');
       } catch {
-        // 401 → notifyUnauthorizedSession; hoặc lỗi mạng — dùng tên từ AuthContext.
+        // Lỗi sẽ tự im lặng, dùng tên lấy từ useAuth()
       }
     })();
     return () => {

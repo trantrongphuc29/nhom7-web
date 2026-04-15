@@ -14,6 +14,18 @@ Route::prefix('v1')->group(function () {
     Route::middleware('jwt.auth')->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
+
+        // Account routes (profile, password, addresses)
+        Route::prefix('account')->group(function () {
+            Route::get('/profile', [\App\Http\Controllers\Api\V1\Account\ProfileController::class, 'profile']);
+            Route::patch('/profile', [\App\Http\Controllers\Api\V1\Account\ProfileController::class, 'update']);
+            Route::post('/password', [\App\Http\Controllers\Api\V1\Account\ProfileController::class, 'changePassword']);
+
+            Route::get('/addresses', [\App\Http\Controllers\Api\V1\Account\AddressController::class, 'index']);
+            Route::post('/addresses', [\App\Http\Controllers\Api\V1\Account\AddressController::class, 'store']);
+            Route::patch('/addresses/{id}', [\App\Http\Controllers\Api\V1\Account\AddressController::class, 'update']);
+            Route::delete('/addresses/{id}', [\App\Http\Controllers\Api\V1\Account\AddressController::class, 'destroy']);
+        });
     });
 
     // Public Product Routes

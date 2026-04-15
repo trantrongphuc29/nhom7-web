@@ -1,11 +1,17 @@
 import axios from "axios";
 import { notifyUnauthorizedSession } from "../utils/authSession";
 
+<<<<<<< HEAD
 // Cấu hình địa chỉ Backend Laravel
 const BASE_URL = "http://localhost:8000/api/v1";
 
 const http = axios.create({
   baseURL: BASE_URL,
+=======
+// Thêm cấu hình baseURL vào đây
+const http = axios.create({
+  baseURL: "http://127.0.0.1:8000", 
+>>>>>>> 9f13fa83b9401ffead9746ad8b7d81ee236cc391
 });
 
 function toFetchLikeResponse(response) {
@@ -21,6 +27,42 @@ function normalizeMessage(error) {
   return error?.message || "Request failed";
 }
 
+<<<<<<< HEAD
+=======
+async function requestViaMockServer(url, options = {}) {
+  // 🛑 BỘ LỌC THÔNG MINH: Chỉ tắt Mock đối với các API bạn đã làm xong ở Backend
+  if (url.includes('/api/v1/auth') || url.includes('/api/v1/account')) {
+    return null; // Bỏ qua Mock, chạy thẳng xuống Laravel
+  }
+
+  // 👇 GIỮ NGUYÊN CODE CŨ TỪ ĐÂY ĐỂ TRANG SẢN PHẨM KHÔNG BỊ SẬP GIAO DIỆN
+  if (typeof window === "undefined") return null;
+  const mockRequest = window.__lapstoreMockRequest;
+  if (typeof mockRequest !== "function") return null;
+
+  const init = {
+    method: options.method || "GET",
+    headers: options.headers || {},
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  };
+
+  const mockResponse = await mockRequest(url, init);
+  if (!mockResponse) return null;
+
+  let data = {};
+  try {
+    data = await mockResponse.json();
+  } catch {
+    data = {};
+  }
+
+  return {
+    status: mockResponse.status ?? 0,
+    data,
+  };
+}
+
+>>>>>>> 9f13fa83b9401ffead9746ad8b7d81ee236cc391
 export async function requestJson(url, options = {}) {
   const method = (options.method || "GET").toUpperCase();
   const token = localStorage.getItem("access_token");
