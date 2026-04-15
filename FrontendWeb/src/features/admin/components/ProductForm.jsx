@@ -7,14 +7,14 @@ import ImageUploader from "./ImageUploader";
 import toast from "react-hot-toast";
 import { validateSpecsComplete } from "../utils/productFormValidation";
 
-const schema = z
-  .object({
-    name: z.string().min(3, "Tên sản phẩm tối thiểu 3 ký tự"),
-    status: z.enum(["active", "inactive", "out_of_stock", "coming_soon"]),
-    salePrice: z.coerce.number().min(0, "Giá bán phải >= 0"),
-    originalPrice: z.coerce.number().min(0, "Giá gốc phải >= 0"),
-    stockQuantity: z.coerce.number().int("Số lượng kho phải là số nguyên").min(0, "Số lượng kho phải >= 0"),
-  });
+// 1. Định nghĩa Schema Validation
+const schema = z.object({
+  name: z.string().min(3, "Tên sản phẩm tối thiểu 3 ký tự"),
+  status: z.enum(["active", "inactive", "out_of_stock", "coming_soon"]),
+  salePrice: z.coerce.number().min(0, "Giá bán phải >= 0"),
+  originalPrice: z.coerce.number().min(0, "Giá gốc phải >= 0"),
+  stockQuantity: z.coerce.number().int("Số lượng kho phải là số nguyên").min(0, "Số lượng kho phải >= 0"),
+});
 
 export default function ProductForm({
   initialValues,
@@ -23,17 +23,19 @@ export default function ProductForm({
   onSubmit,
   onImageUpload,
 }) {
+  // State quản lý Specs và Ảnh
   const [specs, setSpecs] = useState(() => mergeLoadedSpecs(initialValues?.specs));
   const [images, setImages] = useState([]);
-  const [existingImageUrls, setExistingImageUrls] = useState(initialValues?.imageUrls || []);
+  const [existingImageUrls, setExistingImageUrls] = useState(initialValues?.images || []);
 
+  // 2. Map dữ liệu từ Backend (snake_case) sang Form (camelCase)
   const defaultValues = useMemo(
     () => ({
       name: initialValues?.name || "",
       status: initialValues?.status || "active",
-      salePrice: Number.isFinite(initialValues?.salePrice) ? initialValues.salePrice : 0,
-      originalPrice: Number.isFinite(initialValues?.originalPrice) ? initialValues.originalPrice : 0,
-      stockQuantity: Number.isFinite(initialValues?.stockQuantity) ? initialValues.stockQuantity : 0,
+      salePrice: initialValues?.sale_price || 0,
+      originalPrice: initialValues?.original_price || 0,
+      stockQuantity: initialValues?.stock_quantity || 0,
     }),
     [initialValues]
   );
@@ -43,113 +45,133 @@ export default function ProductForm({
     defaultValues,
   });
 
+  // Tính toán % giảm giá hiển thị trên giao diện
   const salePrice = watch("salePrice");
   const originalPrice = watch("originalPrice");
   const discountPercent = useMemo(() => {
     const sale = Number(salePrice);
     const original = Number(originalPrice);
-    if (!Number.isFinite(sale) || !Number.isFinite(original)) return 0;
-    if (sale <= 0) return 0;
-    if (original <= sale) return 0;
+    if (!Number.isFinite(sale) || !Number.isFinite(original) || sale <= 0 || original <= sale) return 0;
     return Math.round(((original - sale) / original) * 100);
   }, [originalPrice, salePrice]);
 
+  // Reset form khi dữ liệu ban đầu thay đổi (dùng cho trang Edit)
   useEffect(() => {
     reset(defaultValues);
     setSpecs(mergeLoadedSpecs(initialValues?.specs));
-    setExistingImageUrls(initialValues?.imageUrls || []);
+    setExistingImageUrls(initialValues?.images || []);
   }, [defaultValues, initialValues, reset]);
 
+  // 3. Xử lý Submit
   const submitHandler = handleSubmit(async (values) => {
+    // Kiểm tra thông số kỹ thuật
     const specErr = validateSpecsComplete(specs);
     if (specErr) {
       toast.error(specErr);
       return;
     }
-    const existingImg = existingImageUrls.length;
-    const newFiles = images.map((x) => x.file).filter(Boolean).length;
-    if (existingImg + newFiles === 0) {
-      toast.error("Cần ít nhất một ảnh sản phẩm (thêm ảnh mới hoặc giữ ảnh hiện có khi sửa).");
-      return;
-    }
 
-    const files = images.map((x) => x.file).filter(Boolean);
-    const uploaded = files.length > 0 && onImageUpload ? await onImageUpload(files, values.name) : [];
-    onSubmit({
-      ...values,
-      specs,
-      images: [...existingImageUrls, ...uploaded],
-    });
+    /* LƯU Ý: Đã tạm thời bỏ qua bước kiểm tra (existingImg + newFiles === 0) 
+       để bạn có thể tạo sản phẩm không cần ảnh.
+    */
+
+    try {
+      let uploadedImages = [];
+      const filesToUpload = images.map((x) => x.file).filter(Boolean);
+
+      // Chỉ gọi API upload nếu thực sự có chọn file mới
+      if (filesToUpload.length > 0 && onImageUpload) {
+        uploadedImages = await onImageUpload(filesToUpload, values.name);
+      }
+
+      // 4. Map ngược dữ liệu sang snake_case để gửi lên Laravel
+      const finalPayload = {
+        name: values.name,
+        status: values.status,
+        sale_price: values.salePrice,
+        original_price: values.originalPrice,
+        stock_quantity: values.stockQuantity,
+        specs: specs,
+        // Gộp ảnh cũ (nếu sửa) và ảnh mới vừa upload (nếu có)
+        images: [...existingImageUrls, ...uploadedImages],
+      };
+
+      onSubmit(finalPayload);
+    } catch (error) {
+      console.error("Lỗi submit:", error);
+      toast.error("Có lỗi xảy ra: " + error.message);
+    }
   });
 
   return (
-    <form onSubmit={submitHandler} className="space-y-4">
-      <div className="bg-white border border-slate-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <label className="text-sm font-medium">Tên sản phẩm *</label>
-          <input {...register("name")} className="mt-1 w-full border rounded-lg px-3 py-2 text-sm" />
-          {errors.name ? <p className="text-xs text-rose-600 mt-1">{errors.name.message}</p> : null}
+    <form onSubmit={submitHandler} className="space-y-6">
+      <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="md:col-span-2">
+          <h3 className="font-semibold text-slate-800 border-b pb-2 mb-2">Thông tin cơ bản</h3>
         </div>
+
         <div>
-          <label className="text-sm font-medium">Trạng thái *</label>
-          <select {...register("status")} className="mt-1 w-full border rounded-lg px-3 py-2 text-sm">
+          <label className="text-sm font-medium text-slate-700">Tên sản phẩm *</label>
+          <input 
+            {...register("name")} 
+            className={`mt-1 w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 outline-none ${errors.name ? 'border-rose-500 ring-rose-200' : 'border-slate-300 focus:ring-blue-200'}`} 
+            placeholder="Ví dụ: Laptop Dell XPS 13"
+          />
+          {errors.name && <p className="text-xs text-rose-600 mt-1">{errors.name.message}</p>}
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-slate-700">Trạng thái *</label>
+          <select {...register("status")} className="mt-1 w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 outline-none">
             <option value="active">Đang bán</option>
-            <option value="inactive">Ngừng bán</option>
-            <option value="out_of_stock">Hết hàng</option>
-            <option value="coming_soon">Sắp ra mắt</option>
+            <option value="inactive">Ngừng kinh doanh</option>
+            <option value="out_of_stock">Tạm hết hàng</option>
+            <option value="coming_soon">Sắp về hàng</option>
           </select>
         </div>
+
         <div>
-          <label className="text-sm font-medium">Giá bán</label>
+          <label className="text-sm font-medium text-slate-700">Giá bán thực tế (VNĐ) *</label>
           <input
             type="number"
-            inputMode="numeric"
-            step="1000"
-            min={0}
             {...register("salePrice")}
-            className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+            className="mt-1 w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 outline-none"
           />
-          {errors.salePrice ? <p className="text-xs text-rose-600 mt-1">{errors.salePrice.message}</p> : null}
         </div>
+
         <div>
-          <label className="text-sm font-medium">Giá gốc (gạch ngang)</label>
+          <label className="text-sm font-medium text-slate-700">Giá niêm yết (Giá gốc)</label>
           <input
             type="number"
-            inputMode="numeric"
-            step="1000"
-            min={0}
             {...register("originalPrice")}
-            className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+            className="mt-1 w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 outline-none"
           />
-          {errors.originalPrice ? <p className="text-xs text-rose-600 mt-1">{errors.originalPrice.message}</p> : null}
         </div>
+
         <div>
-          <label className="text-sm font-medium">% giảm giá</label>
+          <label className="text-sm font-medium text-slate-700">% Giảm giá (Tự động)</label>
           <input
-            value={discountPercent}
-            readOnly
-            className="mt-1 w-full border rounded-lg px-3 py-2 text-sm bg-slate-50"
+            value={`${discountPercent}%`}
+            disabled
+            className="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 font-bold text-green-600"
           />
         </div>
+
         <div>
-          <label className="text-sm font-medium">Số lượng kho</label>
+          <label className="text-sm font-medium text-slate-700">Số lượng kho *</label>
           <input
             type="number"
-            inputMode="numeric"
-            step="1"
-            min={0}
             {...register("stockQuantity")}
-            className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+            className="mt-1 w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 outline-none"
           />
-          {errors.stockQuantity ? <p className="text-xs text-rose-600 mt-1">{errors.stockQuantity.message}</p> : null}
         </div>
       </div>
 
       <ProductSpecsForm specs={specs} setSpecs={setSpecs} />
 
-      <div className="bg-white border border-slate-200 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-slate-700 mb-1">Hình ảnh sản phẩm *</h3>
-        <p className="text-xs text-slate-500 mb-3">Tạo mới: cần upload ít nhất một ảnh. Sửa: có thể giữ ảnh hiện có hoặc thêm ảnh mới.</p>
+      <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6">
+        <h3 className="text-sm font-semibold text-slate-800 mb-2">Hình ảnh sản phẩm</h3>
+        <p className="text-xs text-slate-500 mb-4 italic">Đã tắt bắt buộc upload để bạn test Backend.</p>
         <ImageUploader
           files={images}
           setFiles={setImages}
@@ -158,9 +180,15 @@ export default function ProductForm({
         />
       </div>
 
-      <button disabled={submitting} className="px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold">
-        {submitting ? "Đang lưu..." : submitLabel}
-      </button>
+      <div className="flex justify-end gap-3">
+        <button 
+          type="submit" 
+          disabled={submitting} 
+          className={`px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold shadow-lg transition-all ${submitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 active:scale-95'}`}
+        >
+          {submitting ? "Đang xử lý..." : submitLabel}
+        </button>
+      </div>
     </form>
   );
 }

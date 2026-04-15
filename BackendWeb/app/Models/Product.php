@@ -17,13 +17,17 @@ class Product extends Model
         'detail_html',
     ];
 
-    public function images(): HasMany
-    {
+    public function images() {
         return $this->hasMany(ProductImage::class);
     }
+<<<<<<< HEAD
 
     public function specs(): HasMany
     {
+=======
+    
+    public function specs(){
+>>>>>>> 3746f909bc8920b3880178962dc77da94e19005b
         return $this->hasMany(ProductSpec::class);
     }
 }

@@ -18,7 +18,9 @@ class AuthController extends Controller
             'full_name' => $request->string('full_name')->value(),
             'email' => $request->string('email')->lower()->value(),
             'phone' => $request->input('phone'),
-            'password' => Hash::make($request->string('password')->value()),
+            // CHÚ Ý: Đổi thành password_hash. 
+            // KHÔNG dùng Hash::make vì Model User đã có casts 'hashed' tự động làm việc này.
+            'password_hash' => $request->string('password')->value(), 
             'role' => 'user',
             'status' => 'active',
             'loyalty_points' => 0,
@@ -33,8 +35,11 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request)
     {
-        $user = User::where('email', $request->string('email')->lower()->value())->first();
-        if (!$user || !Hash::check($request->string('password')->value(), $user->password)) {
+        $email = $request->string('email')->lower()->value();
+        $user = User::where('email', $email)->first();
+
+        // CHÚ Ý: Phải kiểm tra cột 'password_hash' thay vì 'password'
+        if (!$user || !Hash::check($request->string('password')->value(), $user->password_hash)) {
             return ApiResponse::error('Invalid credentials', 401);
         }
 
