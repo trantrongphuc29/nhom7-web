@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\ProductSpec;
 
 class Product extends Model
 {
@@ -20,14 +21,8 @@ class Product extends Model
     public function images() {
         return $this->hasMany(ProductImage::class);
     }
-<<<<<<< HEAD
-
-    public function specs(): HasMany
-    {
-=======
     
     public function specs(){
->>>>>>> 3746f909bc8920b3880178962dc77da94e19005b
         return $this->hasMany(ProductSpec::class);
     }
 }

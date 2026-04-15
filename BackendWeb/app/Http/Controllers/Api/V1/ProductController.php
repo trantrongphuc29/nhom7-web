@@ -12,7 +12,6 @@ class ProductController extends Controller
 {
     public function index()
     {
-<<<<<<< HEAD
         $query = Product::query()->with(['images', 'specs']);
 
         if ($keyword = trim((string) request('keyword', ''))) {
@@ -24,13 +23,6 @@ class ProductController extends Controller
                         $specQuery->where('spec_value', 'like', "%{$keyword}%");
                     });
             });
-=======
-        // Bổ sung load thêm 'specs' bên cạnh 'images'
-        $query = Product::query()->with(['images', 'specs']);
-        
-        if (request('keyword')) {
-            $query->where('name', 'like', '%'.request('keyword').'%');
->>>>>>> 3746f909bc8920b3880178962dc77da94e19005b
         }
 
         if ($status = request('status')) {
@@ -112,13 +104,9 @@ class ProductController extends Controller
 
     public function show(int $id)
     {
-<<<<<<< HEAD
-        $product = Product::with(['images', 'specs'])->find($id);
-=======
         // Bổ sung load thêm 'specs'
         $product = Product::with(['images', 'specs'])->find($id);
         
->>>>>>> 3746f909bc8920b3880178962dc77da94e19005b
         if (!$product) {
             return ApiResponse::error('Product not found', 404);
         }
