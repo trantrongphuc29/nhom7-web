@@ -1,53 +1,49 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { mockData } from '../mocks/mockData';
+import { postJson } from '../services/apiClient';
 
 const AuthContext = createContext(null);
-const DEMO_PASSWORD = '123456';
-
-function resolveMockUserByEmail(email) {
-  const normalized = String(email || '').trim().toLowerCase();
-  if (normalized === String(mockData.adminUser?.email || '').toLowerCase()) {
-    return { token: 'mock-token-admin', user: mockData.adminUser };
-  }
-  if (normalized === String(mockData.user?.email || '').toLowerCase()) {
-    return { token: 'mock-token-user', user: mockData.user };
-  }
-  return null;
-}
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState('');
-  const [user, setUser] = useState(null);
+  // 1. Đọc dữ liệu từ localStorage để F5 không bị mất
+  const [token, setToken] = useState(() => localStorage.getItem('access_token') || '');
+  const [user, setUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('user_info');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
+  });
   const [isLoading, setIsLoading] = useState(false);
 
   const refreshUser = useCallback(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 200));
     return user;
   }, [user]);
 
   const login = async (email, password) => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      if (String(password || '') !== DEMO_PASSWORD) {
-        throw new Error('Sai mật khẩu. Dùng mật khẩu demo: 123456');
-      }
-      const resolved = resolveMockUserByEmail(email);
-      if (!resolved) {
-        throw new Error('Không tìm thấy tài khoản.');
-      }
-      setToken(resolved.token);
-      setUser(resolved.user);
-      return resolved.user;
+      const response = await postJson('http://127.0.0.1:8000/api/v1/auth/login', { email, password });
+      const { token, user: backendUser } = response.data; 
+      
+      // Đồng bộ tên để Frontend hiểu
+      const mappedUser = { ...backendUser, fullName: backendUser.full_name };
+      
+      setToken(token);
+      setUser(mappedUser);
+      // 2. Lưu vào bộ nhớ máy tính
+      localStorage.setItem('access_token', token);
+      localStorage.setItem('user_info', JSON.stringify(mappedUser));
+      
+      return mappedUser;
+    } catch (error) {
+      throw new Error(error.message || 'Đăng nhập thất bại');
     } finally {
       setIsLoading(false);
     }
   };
 
   const register = async (email, password, confirmPassword) => {
-    void email;
-    void password;
-    void confirmPassword;
     setIsLoading(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -60,18 +56,14 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setToken('');
     setUser(null);
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('user_info');
   };
 
   const value = useMemo(
     () => ({
-      token,
-      user,
-      isAuthenticated: Boolean(token && user),
-      isLoading,
-      login,
-      register,
-      logout,
-      refreshUser,
+      token, user, isAuthenticated: Boolean(token && user),
+      isLoading, login, register, logout, refreshUser, setUser // Thêm setUser vào đây
     }),
     [token, user, isLoading, refreshUser]
   );
@@ -81,8 +73,6 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 }

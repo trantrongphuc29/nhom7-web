@@ -10,6 +10,7 @@ const db = {
   adminCustomers: structuredClone(mockData.adminCustomers),
   users: structuredClone(mockData.users),
   dashboard: structuredClone(mockData.dashboard),
+  vouchers: structuredClone(mockData.vouchers || []),
 };
 
 function jsonResponse(body, status = 200) {
@@ -314,6 +315,7 @@ async function handleMockRequest(input, init = {}) {
 export function setupMockServer() {
   if (typeof window === "undefined") return;
   if (window.__lapstoreMockServerInstalled) return;
+  window.__lapstoreMockRequest = handleMockRequest;
   const originalFetch = window.fetch.bind(window);
   window.fetch = async (input, init) => {
     const mocked = await handleMockRequest(input, init || {});
