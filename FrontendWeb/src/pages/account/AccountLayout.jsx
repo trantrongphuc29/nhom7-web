@@ -52,6 +52,9 @@ export default function AccountLayout() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           <aside className="w-full lg:w-72 shrink-0">
+            <div className="px-3 py-3 mb-1">
+                <p className="text-sm font-bold text-slate-900 truncate">{displayName}</p>
+              </div>
             <nav className="bg-white rounded-2xl shadow-xl p-2 space-y-1.5">
               <NavLink to="/tai-khoan/thong-tin" className={navClass}>
                 <span className="material-symbols-outlined text-[20px] shrink-0">person</span>
