@@ -24,11 +24,29 @@ class OrderController extends Controller
             'paymentMethod' => ['required', 'in:cod,bank_transfer,card'],
         ]);
 
+        $productIds = collect($payload['items'])
+            ->pluck('productId')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $products = DB::table('products')
+            ->whereIn('id', $productIds)
+            ->get(['id', 'sale_price'])
+            ->keyBy('id');
+
+        foreach ($payload['items'] as $item) {
+            $pid = (int) $item['productId'];
+            if (!$products->has($pid)) {
+                return ApiResponse::error('Không tìm thấy sản phẩm #' . $pid, 422);
+            }
+        }
+
         $user = $request->user();
         $subtotal = 0;
         $orderCode = 'ODR-' . now()->format('YmdHis') . '-' . random_int(1000, 9999);
 
-        $orderId = DB::transaction(function () use ($payload, $user, &$subtotal, $orderCode) {
+        $orderId = DB::transaction(function () use ($payload, $user, &$subtotal, $orderCode, $products) {
             $shipping = $payload['shipping'];
             $line1 = (string) ($shipping['shipAddress'] ?? '');
 
@@ -54,7 +72,8 @@ class OrderController extends Controller
             ]);
 
             foreach ($payload['items'] as $item) {
-                $unitPrice = 1000000;
+                $pid = (int) $item['productId'];
+                $unitPrice = (int) $products->get($pid)->sale_price;
                 $quantity = (int) $item['quantity'];
                 $subtotal += $unitPrice * $quantity;
 
@@ -73,6 +92,7 @@ class OrderController extends Controller
                 ->where('id', $orderId)
                 ->update([
                     'subtotal_amount' => $subtotal,
+                    'shipping_fee' => 0,
                     'total_amount' => $subtotal,
                     'updated_at' => now(),
                 ]);

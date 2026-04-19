@@ -86,7 +86,6 @@ export default function MiniCartDropdown({ open, onClose, anchorRef }) {
                         </span>
                         <button
                           type="button"
-                          disabled={li.quantity >= (Number(li.stock) || 0)}
                           onClick={() => updateQuantity(li.lineId, li.quantity + 1)}
                           className="px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-bold"
                         >

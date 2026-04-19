@@ -10,10 +10,9 @@ import { validateSpecsComplete } from "../utils/productFormValidation";
 // 1. Định nghĩa Schema Validation
 const schema = z.object({
   name: z.string().min(3, "Tên sản phẩm tối thiểu 3 ký tự"),
-  status: z.enum(["active", "inactive", "out_of_stock", "coming_soon"]),
+  status: z.enum(["active", "inactive"]),
   salePrice: z.coerce.number().min(0, "Giá bán phải >= 0"),
   originalPrice: z.coerce.number().min(0, "Giá gốc phải >= 0"),
-  stockQuantity: z.coerce.number().int("Số lượng kho phải là số nguyên").min(0, "Số lượng kho phải >= 0"),
 });
 
 export default function ProductForm({
@@ -32,10 +31,9 @@ export default function ProductForm({
   const defaultValues = useMemo(
     () => ({
       name: initialValues?.name || "",
-      status: initialValues?.status || "active",
+      status: initialValues?.status === "active" ? "active" : "inactive",
       salePrice: initialValues?.sale_price || 0,
       originalPrice: initialValues?.original_price || 0,
-      stockQuantity: initialValues?.stock_quantity || 0,
     }),
     [initialValues]
   );
@@ -90,7 +88,7 @@ export default function ProductForm({
         status: values.status,
         sale_price: values.salePrice,
         original_price: values.originalPrice,
-        stock_quantity: values.stockQuantity,
+        stock_quantity: initialValues?.stock_quantity ?? 0,
         specs: specs,
         // Gộp ảnh cũ (nếu sửa) và ảnh mới vừa upload (nếu có)
         images: [...existingImageUrls, ...uploadedImages],
@@ -125,8 +123,6 @@ export default function ProductForm({
           <select {...register("status")} className="mt-1 w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 outline-none">
             <option value="active">Đang bán</option>
             <option value="inactive">Ngừng kinh doanh</option>
-            <option value="out_of_stock">Tạm hết hàng</option>
-            <option value="coming_soon">Sắp về hàng</option>
           </select>
         </div>
 
@@ -157,14 +153,6 @@ export default function ProductForm({
           />
         </div>
 
-        <div>
-          <label className="text-sm font-medium text-slate-700">Số lượng kho *</label>
-          <input
-            type="number"
-            {...register("stockQuantity")}
-            className="mt-1 w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 outline-none"
-          />
-        </div>
       </div>
 
       <ProductSpecsForm specs={specs} setSpecs={setSpecs} />

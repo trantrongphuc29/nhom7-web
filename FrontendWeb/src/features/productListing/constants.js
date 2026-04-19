@@ -12,6 +12,5 @@ export const DEFAULT_PRODUCT_FILTERS = {
   minPrice: null,
   maxPrice: null,
   priceRanges: [],
-  keyword: "",
   sort: "newest",
 };

@@ -39,15 +39,14 @@ export default function AdminOrdersPage() {
               <tr>
                 <th className="text-left px-3 py-2.5 text-slate-600">Mã đơn</th>
                 <th className="text-left px-3 py-2.5 text-slate-600">Khách hàng</th>
-                <th className="text-left px-3 py-2.5 text-slate-600">Thanh toán</th>
                 <th className="text-left px-3 py-2.5 text-slate-600">Tổng tiền</th>
               </tr>
             </thead>
             <tbody>
               {listQuery.isLoading ? (
-                <tr><td className="p-6 text-center text-slate-500" colSpan={4}>Đang tải đơn hàng...</td></tr>
+                <tr><td className="p-6 text-center text-slate-500" colSpan={3}>Đang tải đơn hàng...</td></tr>
               ) : records.length === 0 ? (
-                <tr><td className="p-6 text-center text-slate-500" colSpan={4}>Chưa có đơn hàng.</td></tr>
+                <tr><td className="p-6 text-center text-slate-500" colSpan={3}>Chưa có đơn hàng.</td></tr>
               ) : (
                 records.map((row) => (
                   <tr
@@ -62,7 +61,6 @@ export default function AdminOrdersPage() {
                       <div className="break-words">{row.customerName || "-"}</div>
                       <div className="text-xs text-slate-500">{row.customerPhone || "-"}</div>
                     </td>
-                    <td className="px-3 py-2.5 text-slate-700 whitespace-nowrap">{row.paymentMethod}</td>
                     <td className="px-3 py-2.5 text-slate-800 whitespace-nowrap">{formatVndCurrency(row.totalAmount)}</td>
                   </tr>
                 ))
@@ -89,6 +87,10 @@ export default function AdminOrdersPage() {
                 <p className="text-slate-500">Địa chỉ giao hàng</p>
                 <p className="text-slate-800 break-words">{detail.shippingAddress || "-"}</p>
               </div>
+              <div className="pt-1 border-t border-slate-100">
+                <p className="text-slate-500 text-xs">Tổng thanh toán</p>
+                <p className="text-lg font-semibold text-slate-900">{formatVndCurrency(detail.totalAmount ?? detail.subtotalAmount ?? 0)}</p>
+              </div>
               <div>
                 <p className="text-slate-500 mb-1">Sản phẩm</p>
                 <div className="space-y-2 max-h-[52vh] overflow-auto pr-1">
@@ -97,7 +99,7 @@ export default function AdminOrdersPage() {
                       <p className="font-medium text-slate-800 break-words">{item.productName}</p>
                       <p className="text-xs text-slate-500 break-words">{item.variantName || "-"}</p>
                       <p className="text-xs text-slate-600">
-                        SL: {item.quantity} • {formatVndCurrency(item.unitPrice)}
+                        SL: {item.quantity} × {formatVndCurrency(item.unitPrice)} • Thành tiền: {formatVndCurrency(item.lineTotal ?? item.unitPrice * item.quantity)}
                       </p>
                     </div>
                   ))}

@@ -7,7 +7,6 @@ export async function getAdminOrders(params) {
   const limit = Number(params?.limit || 10);
   query.set("page", String(page));
   query.set("limit", String(limit));
-  if (params?.search) query.set("search", params.search);
 
   const res = await getJson(`${API_ENDPOINTS.ADMIN_ORDERS}?${query.toString()}`);
   return res.data || {};

@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import MiniCartDropdown from './cart/MiniCartDropdown';
-import HeaderSearchBar from './HeaderSearchBar';
 import { getStaffHomePath, isRetailCustomerRole, isStaffRole } from '../features/admin/utils/rbac';
 
 const Header = () => {
@@ -35,7 +34,7 @@ const Header = () => {
           </div>
           <Link to="/" className="text-xl font-bold tracking-tight">LAPSTORE</Link>
         </div>
-        <HeaderSearchBar />
+        <div className="flex-1 hidden md:block" />
         <div className="flex items-center gap-4">
           {!isAuthenticated ? (
             <Link to="/login" className="hidden md:flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:border-slate-400 transition">

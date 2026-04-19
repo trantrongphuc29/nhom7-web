@@ -13,13 +13,11 @@ function buildQuery(filters) {
     if (filters.minPrice != null && filters.minPrice !== "") params.append("minPrice", filters.minPrice);
     if (filters.maxPrice != null && filters.maxPrice !== "") params.append("maxPrice", filters.maxPrice);
   }
-  if (filters.keyword) params.append("keyword", filters.keyword);
   return params.toString();
 }
 
 function sortProducts(records, sort, filters = {}) {
   const result = [...records];
-  const hasKeyword = Boolean(filters.keyword && String(filters.keyword).trim());
   switch (sort) {
     case "price-asc":
       result.sort((a, b) => a.min_price - b.min_price);
@@ -28,7 +26,6 @@ function sortProducts(records, sort, filters = {}) {
       result.sort((a, b) => b.min_price - a.min_price);
       break;
     case "newest":
-      if (hasKeyword) break;
       result.sort((a, b) => b.id - a.id);
       break;
     default:

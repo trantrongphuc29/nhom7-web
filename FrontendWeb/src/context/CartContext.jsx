@@ -1,10 +1,9 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { useStoreConfig } from "./StoreConfigContext";
 
 const CartContext = createContext(null);
 const STORAGE_KEY = "lapstore_cart_v1";
 
-/** @typedef {{ lineId: string, productId: number, variantId: number, name: string, image: string|null, specSummary: string, price: number, stock: number, quantity: number, color?: string, productSlug?: string }} CartLine */
+/** @typedef {{ lineId: string, productId: number, variantId: number, name: string, image: string|null, specSummary: string, price: number, quantity: number, color?: string, productSlug?: string }} CartLine */
 
 function loadCart() {
   try {
@@ -29,30 +28,13 @@ export function getLineId(productId, variantId) {
   return `${productId}-${variantId}`;
 }
 
-export function stockStatus(stock, qty) {
-  const s = Number(stock) || 0;
-  const q = Number(qty) || 0;
-  if (s <= 0) return "out";
-  if (s <= 3) return "low";
-  if (q > s) return "out";
-  return "in";
-}
-
-export function computeCartTotals(items, shipping = {}) {
+export function computeCartTotals(items) {
   const subtotal = items.reduce((sum, li) => sum + Number(li.price) * Number(li.quantity), 0);
-  const threshold = Number(shipping.freeShippingThreshold) || 10_000_000;
-  const fee = Number(shipping.defaultShippingFee) || 50_000;
-  const shippingFee = subtotal >= threshold ? 0 : fee;
-  const total = Math.max(0, subtotal + shippingFee);
-  return { subtotal, shippingFee, total };
-}
-
-export function cartAllInStock(items) {
-  return items.every((li) => li.quantity <= (Number(li.stock) || 0) && (Number(li.stock) || 0) > 0);
+  const total = Math.max(0, subtotal);
+  return { subtotal, total };
 }
 
 export function CartProvider({ children }) {
-  const { defaultShippingFee, freeShippingThreshold } = useStoreConfig();
   const [items, setItems] = useState(loadCart);
 
   useEffect(() => {
@@ -80,8 +62,7 @@ export function CartProvider({ children }) {
     setItems((prev) =>
       prev.map((li) => {
         if (li.lineId !== lineId) return li;
-        const max = Math.max(1, Number(li.stock) || 1);
-        return { ...li, quantity: Math.min(q, max) };
+        return { ...li, quantity: q };
       })
     );
   }, []);
@@ -99,12 +80,7 @@ export function CartProvider({ children }) {
 
   const itemCount = useMemo(() => items.reduce((s, li) => s + li.quantity, 0), [items]);
 
-  const totals = useMemo(
-    () => computeCartTotals(items, { defaultShippingFee, freeShippingThreshold }),
-    [items, defaultShippingFee, freeShippingThreshold]
-  );
-
-  const allInStock = useMemo(() => cartAllInStock(items), [items]);
+  const totals = useMemo(() => computeCartTotals(items), [items]);
 
   const value = useMemo(
     () => ({
@@ -116,7 +92,6 @@ export function CartProvider({ children }) {
       clear,
       itemCount,
       totals,
-      allInStock,
     }),
     [
       items,
@@ -127,7 +102,6 @@ export function CartProvider({ children }) {
       clear,
       itemCount,
       totals,
-      allInStock,
     ]
   );
 

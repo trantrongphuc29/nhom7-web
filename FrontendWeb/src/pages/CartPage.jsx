@@ -2,24 +2,12 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import toast from "react-hot-toast";
 import { BACKEND_BASE_URL } from "../config/api";
-import { useCart, stockStatus } from "../context/CartContext";
-import { useStoreConfig } from "../context/StoreConfigContext";
+import { useCart } from "../context/CartContext";
 import { fmtPrice } from "../utils/format";
 
-function StockTag({ stock, qty }) {
-  const st = stockStatus(stock, qty);
-  if (st === "out")
-    return <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-rose-100 text-rose-700">Hết hàng</span>;
-  if (st === "low")
-    return <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-800">Sắp hết</span>;
-  return <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">Còn hàng</span>;
-}
-
 export default function CartPage() {
-  const { freeShippingThreshold } = useStoreConfig();
-  const { items, updateQuantity, removeLine, totals, allInStock } = useCart();
+  const { items, updateQuantity, removeLine, totals } = useCart();
   const navigate = useNavigate();
   const [selected, setSelected] = useState(() => new Set(items.map((i) => i.lineId)));
   const [updating, setUpdating] = useState({});
@@ -64,10 +52,6 @@ export default function CartPage() {
 
   const goCheckout = () => {
     if (items.length === 0) return;
-    if (!allInStock) {
-      toast.error("Sản phẩm đã hết hàng");
-      return;
-    }
     navigate("/thong-tin-nhan-hang");
   };
 
@@ -99,28 +83,11 @@ export default function CartPage() {
                 ) : null}
               </div>
 
-              {items.map((li) => {
-                const st = stockStatus(li.stock, li.quantity);
-                const out = st === "out" || li.quantity > (Number(li.stock) || 0);
-                return (
+              {items.map((li) => (
                   <div
                     key={li.lineId}
-                    className={`relative flex min-w-0 gap-3 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 ${
-                      out ? "opacity-75" : ""
-                    }`}
+                    className="relative flex min-w-0 gap-3 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4"
                   >
-                    {out ? (
-                      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-2xl bg-white/70">
-                        <span className="font-bold text-slate-800">Hết hàng</span>
-                        <button
-                          type="button"
-                          onClick={() => removeLine(li.lineId)}
-                          className="text-sm font-semibold text-rose-600 underline"
-                        >
-                          Xóa khỏi giỏ
-                        </button>
-                      </div>
-                    ) : null}
                     <label className="shrink-0 pt-0.5">
                       <input
                         type="checkbox"
@@ -153,9 +120,6 @@ export default function CartPage() {
                           </p>
                         </div>
                         <p className="mt-1 line-clamp-2 text-sm text-slate-600">{li.specSummary}</p>
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <StockTag stock={li.stock} qty={li.quantity} />
-                        </div>
                         <div className="mt-3 flex flex-wrap items-center gap-3">
                           <div className="inline-flex items-center rounded-lg border border-slate-200">
                             <button
@@ -175,7 +139,7 @@ export default function CartPage() {
                             </span>
                             <button
                               type="button"
-                              disabled={li.quantity >= (Number(li.stock) || 0) || updating[li.lineId]}
+                              disabled={updating[li.lineId]}
                               onClick={() => bumpQty(li.lineId, li.quantity + 1)}
                               className="px-3 py-1.5 font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
                             >
@@ -196,8 +160,7 @@ export default function CartPage() {
                       </div>
                     </div>
                   </div>
-                );
-              })}
+                ))}
             </div>
 
             <aside className="w-[360px] shrink-0 space-y-4 sticky top-24">
@@ -208,17 +171,6 @@ export default function CartPage() {
                     <span className="text-slate-600">Tạm tính</span>
                     <span className="font-medium tabular-nums">{fmtPrice(totals.subtotal)}₫</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">Phí vận chuyển</span>
-                    <span className="font-medium tabular-nums">
-                      {totals.shippingFee === 0 ? <span className="text-emerald-600 font-bold">FREE</span> : `${fmtPrice(totals.shippingFee)}₫`}
-                    </span>
-                  </div>
-                  {totals.subtotal < freeShippingThreshold && totals.subtotal > 0 ? (
-                    <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-2 py-1.5">
-                      Mua thêm {fmtPrice(freeShippingThreshold - totals.subtotal)}₫ để được freeship.
-                    </p>
-                  ) : null}
                 </div>
                 <div className="border-t border-slate-200 my-4" />
                 <div className="flex justify-between items-baseline gap-2">
@@ -231,7 +183,6 @@ export default function CartPage() {
                 <button
                   type="button"
                   onClick={goCheckout}
-                  disabled={!allInStock}
                   className="mt-5 w-full rounded-xl bg-slate-900 text-white py-3.5 font-bold text-base hover:bg-slate-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   ĐẶT HÀNG

@@ -34,14 +34,6 @@ class OrderController extends Controller
             $query->where('status', $status);
         }
 
-        if ($search = trim((string) $request->query('search', ''))) {
-            $query->where(function ($q) use ($search) {
-                $q->where('code', 'like', "%{$search}%")
-                    ->orWhere('ship_recipient_name', 'like', "%{$search}%")
-                    ->orWhere('ship_phone', 'like', "%{$search}%");
-            });
-        }
-
         $paginator = $query->paginate($limit, ['*'], 'page', $page);
 
         $records = collect($paginator->items())->map(function ($order) {
@@ -50,7 +42,6 @@ class OrderController extends Controller
                 'code' => $order->code,
                 'customerName' => $order->ship_recipient_name,
                 'customerPhone' => $order->ship_phone,
-                'paymentMethod' => $order->payment_method,
                 'status' => $order->status,
                 'totalAmount' => (int) $order->total_amount,
                 'createdAt' => $order->created_at,
@@ -97,9 +88,9 @@ class OrderController extends Controller
             'customerName' => $order->ship_recipient_name,
             'customerPhone' => $order->ship_phone,
             'customerEmail' => $order->customer_email,
-            'paymentMethod' => $order->payment_method,
             'status' => $order->status,
             'createdAt' => $order->created_at,
+            'subtotalAmount' => (int) $order->subtotal_amount,
             'totalAmount' => (int) $order->total_amount,
             'shippingAddress' => $this->composeShippingAddress($order),
             'items' => $items,

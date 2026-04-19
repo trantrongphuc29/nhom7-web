@@ -13,14 +13,12 @@ import HomePage from "../pages/HomePage";
 import LoginPage from "../pages/LoginPage";
 import OrderSuccessPage from "../pages/OrderSuccessPage";
 import RegisterPage from "../pages/RegisterPage";
-import SearchResultsPage from "../pages/SearchResultsPage";
 import ShippingInfoPage from "../pages/ShippingInfoPage";
 
 export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
-      <Route path="/tim-kiem" element={<SearchResultsPage />} />
       <Route path="/gio-hang" element={<CartPage />} />
       <Route path="/thong-tin-nhan-hang" element={<ShippingInfoPage />} />
       <Route path="/dat-hang-thanh-cong" element={<OrderSuccessPage />} />

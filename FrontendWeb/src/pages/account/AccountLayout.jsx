@@ -50,10 +50,6 @@ export default function AccountLayout() {
     <div className="min-h-screen flex flex-col bg-white font-display text-slate-900">
       <Header />
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{displayName}</h1>
-        </div>
-
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           <aside className="w-full lg:w-72 shrink-0">
             <nav className="bg-white rounded-2xl shadow-xl p-2 space-y-1.5">

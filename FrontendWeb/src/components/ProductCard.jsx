@@ -79,7 +79,6 @@ const ProductCard = ({ product }) => {
       image: product.image || product.imageUrl || null,
       specSummary: product.specSummary || "",
       price: Number(product.min_price) || 0,
-      stock: Number(product.stock) || 999,
       quantity: 1,
       productSlug: product.slug || undefined,
     });

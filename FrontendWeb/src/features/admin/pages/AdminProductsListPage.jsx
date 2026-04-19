@@ -79,7 +79,6 @@ export default function AdminProductsListPage() {
                 <tr>
                   <th className="py-4 px-4 font-semibold text-slate-700">Tên sản phẩm</th>
                   <th className="py-4 px-4 font-semibold text-slate-700">Giá bán</th>
-                  <th className="py-4 px-4 font-semibold text-slate-700 text-center">Tồn kho</th>
                   <th className="py-4 px-4 font-semibold text-slate-700">Trạng thái</th>
                   <th className="py-4 px-4 font-semibold text-slate-700 text-right">Thao tác</th>
                 </tr>
@@ -95,16 +94,13 @@ export default function AdminProductsListPage() {
                       {/* Dùng row.sale_price (snake_case) từ Database */}
                       {formatVndCurrency(row.sale_price || 0)}
                     </td>
-                    <td className="py-4 px-4 text-center text-slate-600">
-                      {row.stock_quantity ?? 0}
-                    </td>
                     <td className="py-4 px-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         row.status === 'active' 
                         ? 'bg-green-100 text-green-700' 
                         : 'bg-slate-100 text-slate-600'
                       }`}>
-                        {row.status === 'active' ? 'Đang bán' : row.status}
+                        {row.status === 'active' ? 'Đang bán' : 'Ngừng kinh doanh'}
                       </span>
                     </td>
                     <td className="py-4 px-4 text-right">
@@ -131,10 +127,10 @@ export default function AdminProductsListPage() {
 
                 {records.length === 0 && (
                   <tr>
-                    <td className="py-20 text-center text-slate-500" colSpan={5}>
+                    <td className="py-20 text-center text-slate-500" colSpan={4}>
                       <div className="flex flex-col items-center">
                         <span className="text-3xl mb-2">📦</span>
-                        <p>Hiện không có sản phẩm nào trong kho hàng.</p>
+                        <p>Hiện không có sản phẩm nào.</p>
                       </div>
                     </td>
                   </tr>

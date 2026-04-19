@@ -5,7 +5,6 @@ import Footer from "../components/Footer";
 import toast from "react-hot-toast";
 import { BACKEND_BASE_URL } from "../config/api";
 import { useCart } from "../context/CartContext";
-import { useStoreConfig } from "../context/StoreConfigContext";
 import { useAuth } from "../context/AuthContext";
 import { getJson } from "../services/apiClient";
 import { createStorefrontOrder } from "../services/orders.service";
@@ -13,8 +12,7 @@ import { fmtPrice } from "../utils/format";
 import { clearShippingDraft, loadShippingDraft, ORDER_SUCCESS_FLAG, ORDER_SUCCESS_ORDER_CODE, saveShippingDraft } from "../utils/checkoutFlow";
 
 export default function ShippingInfoPage() {
-  const { freeShippingThreshold } = useStoreConfig();
-  const { items, totals, allInStock, clear } = useCart();
+  const { items, totals, clear } = useCart();
   const { isAuthenticated, token, user } = useAuth();
   const navigate = useNavigate();
   const [shipName, setShipName] = useState("");
@@ -107,10 +105,6 @@ export default function ShippingInfoPage() {
 
   const continueToPayment = async () => {
     if (items.length === 0) return;
-    if (!allInStock) {
-      toast.error("Sản phẩm đã hết hàng");
-      return;
-    }
     if (!validate()) return;
     const shipping = buildPayload();
     saveShippingDraft(shipping);
@@ -241,19 +235,6 @@ export default function ShippingInfoPage() {
                   <span className="text-slate-600">Tạm tính</span>
                   <span className="font-medium tabular-nums">{fmtPrice(totals.subtotal)}₫</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Phí vận chuyển</span>
-                  <span className="font-medium tabular-nums">
-                    {totals.shippingFee === 0 ? <span className="text-emerald-600 font-bold">Miễn phí</span> : `${fmtPrice(totals.shippingFee)}₫`}
-                  </span>
-                </div>
-                {totals.subtotal < freeShippingThreshold && totals.subtotal > 0 ? (
-                  <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-2 py-1.5">
-                    Mua thêm {fmtPrice(freeShippingThreshold - totals.subtotal)}₫ để được miễn phí vận chuyển.
-                  </p>
-                ) : totals.shippingFee === 0 && totals.subtotal >= freeShippingThreshold ? (
-                  <p className="text-xs text-emerald-700 bg-emerald-50 rounded-lg px-2 py-1.5">Đơn hàng đủ điều kiện miễn phí vận chuyển.</p>
-                ) : null}
               </div>
               <div className="border-t border-slate-200 my-4" />
               <div className="flex justify-between items-baseline gap-2">

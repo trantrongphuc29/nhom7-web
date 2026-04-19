@@ -14,17 +14,6 @@ class ProductController extends Controller
     {
         $query = Product::query()->with(['images', 'specs']);
 
-        if ($keyword = trim((string) request('keyword', ''))) {
-            $query->where(function ($q) use ($keyword) {
-                $q->where('name', 'like', "%{$keyword}%")
-                    ->orWhere('short_description', 'like', "%{$keyword}%")
-                    ->orWhere('detail_html', 'like', "%{$keyword}%")
-                    ->orWhereHas('specs', function ($specQuery) use ($keyword) {
-                        $specQuery->where('spec_value', 'like', "%{$keyword}%");
-                    });
-            });
-        }
-
         if ($status = request('status')) {
             $query->where('status', $status);
         }
