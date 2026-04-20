@@ -2,8 +2,13 @@ import axios from "axios";
 import { notifyUnauthorizedSession } from "../utils/authSession";
 
 
-// Cấu hình địa chỉ Backend Laravel
-const BASE_URL = "http://localhost:8000/api/v1";
+// Cấu hình địa chỉ Backend Laravel:
+// - Production: set REACT_APP_API_BASE_URL (ví dụ: https://your-backend.onrender.com/api/v1)
+// - Local fallback: Laravel chạy ở localhost:8000
+const BASE_URL =
+  process.env.REACT_APP_API_BASE_URL ||
+  process.env.REACT_APP_API_URL ||
+  "http://localhost:8000/api/v1";
 
 const http = axios.create({
   baseURL: BASE_URL,
