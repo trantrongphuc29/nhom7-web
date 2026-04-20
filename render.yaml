@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: backend-php
+    env: docker
+    dockerfilePath: BackendWeb/Dockerfile
+    plan: starter
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        generateString: 32
+      - key: LOG_CHANNEL
+        value: stack
+    autoDeploy: true
