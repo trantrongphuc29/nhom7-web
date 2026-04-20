@@ -15,6 +15,12 @@ export function StoreConfigProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false;
+    if (!API_ENDPOINTS.STORE_CONFIG) {
+      setReady(true);
+      return () => {
+        cancelled = true;
+      };
+    }
     (async () => {
       try {
         const response = await getJson(API_ENDPOINTS.STORE_CONFIG, { skipAuthHandling: true });

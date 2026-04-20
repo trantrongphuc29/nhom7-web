@@ -60,6 +60,7 @@ export default function ShippingInfoPage() {
             setShipAddress(full);
           }
         }
+      } catch {
       } finally {
         if (!cancelled) setPrefilledFromAccount(true);
       }

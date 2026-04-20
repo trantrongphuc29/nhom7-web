@@ -4,10 +4,11 @@
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
 const BACKEND_BASE_URL = process.env.REACT_APP_BACKEND_URL || '';
+const STORE_CONFIG_ENDPOINT = process.env.REACT_APP_STORE_CONFIG_ENDPOINT || '';
 
 export const API_ENDPOINTS = {
   // --- CLIENT ENDPOINTS ---
-  STORE_CONFIG: `${API_BASE_URL}/store-config`,
+  STORE_CONFIG: STORE_CONFIG_ENDPOINT || `${API_BASE_URL}/store-config`,
   PRODUCTS: `${API_BASE_URL}/products`,
   ORDERS_CREATE: `${API_BASE_URL}/orders`,
   PRODUCT_DETAIL: (idOrSlug) => `${API_BASE_URL}/products/${encodeURIComponent(String(idOrSlug))}`,
