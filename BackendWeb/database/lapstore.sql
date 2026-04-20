@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Apr 20, 2026 at 05:36 AM
+-- Generation Time: Apr 20, 2026 at 06:12 AM
 -- Server version: 9.1.0
 -- PHP Version: 8.3.14
 
@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS `products` (
   PRIMARY KEY (`id`),
   KEY `idx_products_status` (`status`),
   KEY `idx_products_price` (`sale_price`)
-) ENGINE=InnoDB AUTO_INCREMENT=107 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=109 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `products`
@@ -130,7 +130,8 @@ INSERT INTO `products` (`id`, `name`, `status`, `sale_price`, `original_price`, 
 (103, 'Dell XPS 13 9340 (2024)', 'active', 45990000, 48990000, 5, 'Laptop doanh nhân siêu mỏng nhẹ, màn hình vô cực OLED.', '<p>Dell XPS 13 9340 là biểu tượng của sự sang trọng với chip Intel Core Ultra mới nhất...</p>', '2026-04-12 10:45:00', '2026-04-12 10:45:00'),
 (104, 'ROG Strix G16 G614JI', 'active', 38500000, 42000000, 8, 'Quái vật gaming với RTX 4070 và màn hình 240Hz.', '<p>Được thiết kế cho game thủ chuyên nghiệp, hệ thống tản nhiệt 3 quạt siêu mát...</p>', '2026-04-12 10:45:00', '2026-04-12 10:45:00'),
 (105, 'MacBook Pro 14 M3 Pro', 'active', 49990000, 52990000, 12, 'Sức mạnh khủng khiếp từ chip M3 Pro, màn hình Liquid Retina XDR.', '<p>Dành cho dân đồ họa và lập trình chuyên nghiệp, thời lượng pin lên tới 18h...</p>', '2026-04-12 10:45:00', '2026-04-12 10:45:00'),
-(106, 'Acer Swift Go 14', 'active', 18990000, 21500000, 20, 'Laptop văn phòng ngon bổ rẻ, màn hình OLED 2.8K.', '<p>Trọng lượng chỉ 1.3kg, hỗ trợ đầy đủ cổng kết nối và Webcam QHD...</p>', '2026-04-12 10:45:00', '2026-04-12 10:45:00');
+(106, 'Acer Swift Go 14', 'active', 18990000, 21500000, 20, 'Laptop văn phòng ngon bổ rẻ, màn hình OLED 2.8K.', '<p>Trọng lượng chỉ 1.3kg, hỗ trợ đầy đủ cổng kết nối và Webcam QHD...</p>', '2026-04-12 10:45:00', '2026-04-12 10:45:00'),
+(108, 'test', 'active', 12, 16, 0, NULL, NULL, '2026-04-19 22:56:39', '2026-04-19 22:56:39');
 
 -- --------------------------------------------------------
 
@@ -149,7 +150,7 @@ CREATE TABLE IF NOT EXISTS `product_images` (
   PRIMARY KEY (`id`),
   KEY `idx_product_images_product` (`product_id`),
   KEY `idx_product_images_primary` (`product_id`,`is_primary`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `product_images`
@@ -159,7 +160,8 @@ INSERT INTO `product_images` (`id`, `product_id`, `url`, `sort_order`, `is_prima
 (1, 103, 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45', 1, 1, '2026-04-12 10:45:00'),
 (2, 104, 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0', 1, 1, '2026-04-12 10:45:00'),
 (3, 105, 'https://images.unsplash.com/photo-1517336714739-489689fd1ca8', 1, 1, '2026-04-12 10:45:00'),
-(4, 106, 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed', 1, 1, '2026-04-12 10:45:00');
+(4, 106, 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed', 1, 1, '2026-04-12 10:45:00'),
+(5, 108, 'https://res.cloudinary.com/deeoz7atz/image/upload/v1776665043/lapstore/products/test/acer-swift-x-14-2023-undefined-8T5_qs4bw1.webp', 1, 1, '2026-04-20 06:04:09');
 
 -- --------------------------------------------------------
 
@@ -176,7 +178,7 @@ CREATE TABLE IF NOT EXISTS `product_specs` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_product_specs` (`product_id`,`spec_key`),
   KEY `idx_product_specs_product` (`product_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `product_specs`
@@ -201,7 +203,11 @@ INSERT INTO `product_specs` (`id`, `product_id`, `spec_key`, `spec_value`) VALUE
 (16, 106, 'CPU', 'Intel Core i5-13500H'),
 (17, 106, 'RAM', '16GB LPDDR5'),
 (18, 106, 'Màn hình', '14 inch OLED 2.8K 90Hz'),
-(19, 106, 'Cổng kết nối', '2x USB-C (Thunderbolt 4), 2x USB-A');
+(19, 106, 'Cổng kết nối', '2x USB-C (Thunderbolt 4), 2x USB-A'),
+(28, 108, 'cpu', 'cpu'),
+(29, 108, 'gpuOnboard', 'gpu'),
+(30, 108, 'ram', 'ram'),
+(31, 108, 'storage', 'o cung');
 
 -- --------------------------------------------------------
 
