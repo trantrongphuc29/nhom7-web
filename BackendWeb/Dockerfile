@@ -8,7 +8,7 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-FROM php:8.3-apache
+FROM php:8.3-fpm
 RUN apt-get update && apt-get install -y --no-install-recommends \
         git \
         unzip \
@@ -19,11 +19,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libxml2-dev \
         libicu-dev \
         libcurl4-openssl-dev \
+        nginx \
     && docker-php-ext-install pdo pdo_mysql zip mbstring exif pcntl bcmath gd intl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-RUN a2enmod rewrite
+RUN curl -sS https://getcomposer.org/installer | php -- -- --install-dir=/usr/local/bin --filename=composer
 
 WORKDIR /var/www/html
 COPY . .
@@ -48,10 +48,10 @@ RUN php artisan key:generate --no-interaction --force
 RUN php artisan config:cache --no-interaction
 RUN php artisan route:cache --no-interaction
 RUN php artisan view:cache --no-interaction || true
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 
-RUN sed -ri 's!DocumentRoot /var/www/html!DocumentRoot /var/www/html/public!g' /etc/apache2/sites-available/*.conf
-RUN sed -ri 's!<Directory /var/www/html>!<Directory /var/www/html/public>!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+# Configure nginx
+COPY nginx.conf /etc/nginx/sites-available/default
+RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
 
 EXPOSE 80
-CMD ["apache2-foreground"]
+CMD service nginx start && php-fpm
