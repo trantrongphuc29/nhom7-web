@@ -37,12 +37,9 @@ RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Create storage link
 RUN php artisan storage:link --force || true
-
 ENV APP_ENV=production
 ENV APP_DEBUG=false
 
-# Generate application key if not set
-RUN php artisan key:generate --no-interaction --force
 
 # Cache configuration and routes
 RUN php artisan config:cache --no-interaction
