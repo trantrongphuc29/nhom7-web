@@ -8,7 +8,8 @@ const STORE_CONFIG_ENDPOINT = process.env.REACT_APP_STORE_CONFIG_ENDPOINT || '';
 
 export const API_ENDPOINTS = {
   // --- CLIENT ENDPOINTS ---
-  STORE_CONFIG: STORE_CONFIG_ENDPOINT || `${API_BASE_URL}/store-config`,
+  // Store config endpoint is optional; leave empty to use fallback config in frontend.
+  STORE_CONFIG: STORE_CONFIG_ENDPOINT,
   PRODUCTS: `${API_BASE_URL}/products`,
   ORDERS_CREATE: `${API_BASE_URL}/orders`,
   PRODUCT_DETAIL: (idOrSlug) => `${API_BASE_URL}/products/${encodeURIComponent(String(idOrSlug))}`,

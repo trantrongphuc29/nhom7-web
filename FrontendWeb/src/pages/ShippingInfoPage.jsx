@@ -39,11 +39,13 @@ export default function ShippingInfoPage() {
     let cancelled = false;
     (async () => {
       try {
-        const [profileRes, addressesRes] = await Promise.all([
+        const [profileResult, addressesResult] = await Promise.allSettled([
           getJson("/account/profile", { skipAuthHandling: true }),
           getJson("/account/addresses", { skipAuthHandling: true }),
         ]);
         if (cancelled) return;
+        const profileRes = profileResult.status === "fulfilled" ? profileResult.value : {};
+        const addressesRes = addressesResult.status === "fulfilled" ? addressesResult.value : [];
         const profile = profileRes?.data || profileRes || {};
         const addresses = addressesRes?.data || addressesRes || [];
         const rows = Array.isArray(addresses) ? addresses : [];
