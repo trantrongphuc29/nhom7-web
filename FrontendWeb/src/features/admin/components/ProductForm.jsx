@@ -7,6 +7,12 @@ import ImageUploader from "./ImageUploader";
 import toast from "react-hot-toast";
 import { validateSpecsComplete } from "../utils/productFormValidation";
 
+function normalizeImageUrlEntry(x) {
+  if (typeof x === "string") return x.trim();
+  if (x && typeof x === "object" && typeof x.url === "string") return x.url.trim();
+  return "";
+}
+
 // 1. Định nghĩa Schema Validation
 const schema = z.object({
   name: z.string().min(3, "Tên sản phẩm tối thiểu 3 ký tự"),
@@ -25,7 +31,9 @@ export default function ProductForm({
   // State quản lý Specs và Ảnh
   const [specs, setSpecs] = useState(() => mergeLoadedSpecs(initialValues?.specs));
   const [images, setImages] = useState([]);
-  const [existingImageUrls, setExistingImageUrls] = useState(initialValues?.images || []);
+  const [existingImageUrls, setExistingImageUrls] = useState(() =>
+    (Array.isArray(initialValues?.images) ? initialValues.images : []).map(normalizeImageUrlEntry).filter(Boolean)
+  );
 
   // 2. Map dữ liệu từ Backend (snake_case) sang Form (camelCase)
   const defaultValues = useMemo(
@@ -57,7 +65,9 @@ export default function ProductForm({
   useEffect(() => {
     reset(defaultValues);
     setSpecs(mergeLoadedSpecs(initialValues?.specs));
-    setExistingImageUrls(initialValues?.images || []);
+    setExistingImageUrls(
+      (Array.isArray(initialValues?.images) ? initialValues.images : []).map(normalizeImageUrlEntry).filter(Boolean)
+    );
   }, [defaultValues, initialValues, reset]);
 
   // 3. Xử lý Submit
@@ -75,14 +85,20 @@ export default function ProductForm({
 
     try {
       let uploadedImages = [];
-      const filesToUpload = images.map((x) => x.file).filter(Boolean);
+      const filesToUpload = images.map((x) => x.file).filter(Boolean).slice(0, 1);
 
-      // Chỉ gọi API upload nếu thực sự có chọn file mới
       if (filesToUpload.length > 0 && onImageUpload) {
         uploadedImages = await onImageUpload(filesToUpload, values.name);
       }
 
-      // 4. Map ngược dữ liệu sang snake_case để gửi lên Laravel
+      const imageUrls = (
+        uploadedImages.length > 0
+          ? uploadedImages.map(normalizeImageUrlEntry)
+          : existingImageUrls.map(normalizeImageUrlEntry)
+      )
+        .filter(Boolean)
+        .slice(0, 1);
+
       const finalPayload = {
         name: values.name,
         status: values.status,
@@ -90,8 +106,7 @@ export default function ProductForm({
         original_price: values.originalPrice,
         stock_quantity: initialValues?.stock_quantity ?? 0,
         specs: specs,
-        // Gộp ảnh cũ (nếu sửa) và ảnh mới vừa upload (nếu có)
-        images: [...existingImageUrls, ...uploadedImages],
+        images: imageUrls,
       };
 
       onSubmit(finalPayload);

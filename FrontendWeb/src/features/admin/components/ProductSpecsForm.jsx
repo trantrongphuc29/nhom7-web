@@ -23,29 +23,44 @@ export function defaultProductSpecs() {
   };
 }
 
+/** API Laravel trả specs dạng mảng [{ spec_key, spec_value }] hoặc object phẳng (camelCase). */
 export function mergeLoadedSpecs(raw) {
   const base = defaultProductSpecs();
-  if (!raw || typeof raw !== "object") return base;
+  if (!raw) return base;
+
+  let flat = {};
+  if (Array.isArray(raw)) {
+    for (const row of raw) {
+      if (row && typeof row.spec_key === "string") {
+        flat[row.spec_key] = row.spec_value != null ? String(row.spec_value) : "";
+      }
+    }
+  } else if (typeof raw === "object") {
+    flat = raw;
+  } else {
+    return base;
+  }
+
   return {
     ...base,
-    cpu: raw.cpu ?? "",
-    gpuOnboard: raw.gpuOnboard ?? "",
-    gpuDiscrete: String(raw.gpuDiscrete ?? raw.gpu_discrete ?? "").trim(),
-    ram: raw.ram ?? "",
-    ramMax: raw.ramMax ?? "",
-    storage: raw.storage ?? "",
-    storageMax: raw.storageMax ?? "",
-    screenSize: raw.screenSize ?? "",
-    screenResolution: raw.screenResolution ?? "",
-    screenTechnology: raw.screenTechnology ?? "",
-    ports: raw.ports ?? "",
-    battery: raw.battery ?? "",
-    dimensions: raw.dimensions ?? "",
-    weight: raw.weight ?? "",
-    material: raw.material ?? "",
-    wireless: raw.wireless ?? "",
-    webcam: raw.webcam ?? "",
-    os: raw.os ?? "",
+    cpu: flat.cpu ?? flat.CPU ?? "",
+    gpuOnboard: flat.gpuOnboard ?? "",
+    gpuDiscrete: String(flat.gpuDiscrete ?? flat.gpu_discrete ?? flat.GPU ?? "").trim(),
+    ram: flat.ram ?? flat.RAM ?? "",
+    ramMax: flat.ramMax ?? "",
+    storage: flat.storage ?? flat["Ổ cứng"] ?? "",
+    storageMax: flat.storageMax ?? "",
+    screenSize: flat.screenSize ?? flat["Màn hình"] ?? "",
+    screenResolution: flat.screenResolution ?? "",
+    screenTechnology: flat.screenTechnology ?? "",
+    ports: flat.ports ?? flat["Cổng kết nối"] ?? "",
+    battery: flat.battery ?? flat.Pin ?? "",
+    dimensions: flat.dimensions ?? "",
+    weight: flat.weight ?? flat["Trọng lượng"] ?? "",
+    material: flat.material ?? flat["Chất liệu"] ?? "",
+    wireless: flat.wireless ?? "",
+    webcam: flat.webcam ?? "",
+    os: flat.os ?? "",
   };
 }
 

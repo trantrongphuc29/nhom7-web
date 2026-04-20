@@ -2,24 +2,43 @@ import React, { useCallback, useEffect, useRef } from "react";
 import { useDropzone } from "react-dropzone";
 import { BACKEND_BASE_URL } from "../../../config/api";
 
-function resolveSrc(url) {
+function toImageUrlString(raw) {
+  if (raw == null || raw === "") return "";
+  if (typeof raw === "string") return raw.trim();
+  if (typeof raw === "object") {
+    if (typeof raw.url === "string") return raw.url.trim();
+    if (typeof raw.secure_url === "string") return raw.secure_url.trim();
+  }
+  return String(raw).trim();
+}
+
+function resolveSrc(raw) {
+  const url = toImageUrlString(raw);
   if (!url) return "";
-  return url.startsWith("http") ? url : `${BACKEND_BASE_URL}/${String(url).replace(/^\//, "")}`;
+  return url.startsWith("http") ? url : `${BACKEND_BASE_URL}/${url.replace(/^\//, "")}`;
 }
 
 export default function ImageUploader({ files, setFiles, existingUrls = [], setExistingUrls }) {
   const previewSetRef = useRef(new Set());
   const onDrop = useCallback(
     (acceptedFiles) => {
-      const mapped = acceptedFiles.map((file) => ({
-        file,
-        preview: URL.createObjectURL(file),
-      }));
-      setFiles([...(files || []), ...mapped]);
+      const next = acceptedFiles[0];
+      if (!next) return;
+      setFiles((prev) => {
+        (prev || []).forEach((x) => {
+          if (x?.preview) URL.revokeObjectURL(x.preview);
+        });
+        return [{ file: next, preview: URL.createObjectURL(next) }];
+      });
     },
-    [files, setFiles]
+    [setFiles]
   );
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: { "image/*": [] } });
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { "image/*": [] },
+    maxFiles: 1,
+    multiple: false,
+  });
   const removeExisting = (index) => {
     if (!setExistingUrls) return;
     setExistingUrls((prev) => prev.filter((_, idx) => idx !== index));
@@ -50,7 +69,7 @@ export default function ImageUploader({ files, setFiles, existingUrls = [], setE
     <div>
       {existingUrls.length > 0 ? (
         <p className="text-xs text-slate-600 mb-2">
-          Ảnh hiện có trên máy chủ ({existingUrls.length}). Thêm ảnh mới bên dưới — khi lưu, ảnh mới sẽ thay toàn bộ nếu bạn upload.
+          Ảnh hiện tại ({existingUrls.length}). Chỉ dùng một ảnh đại diện — chọn ảnh mới bên dưới sẽ thay ảnh đang chọn.
         </p>
       ) : null}
       {existingUrls.length > 0 ? (
@@ -79,7 +98,7 @@ export default function ImageUploader({ files, setFiles, existingUrls = [], setE
         }`}
       >
         <input {...getInputProps()} />
-        <p className="text-sm text-slate-600">Kéo thả ảnh hoặc click để thêm ảnh mới</p>
+        <p className="text-sm text-slate-600">Kéo thả hoặc click để chọn một ảnh (JPEG/PNG/WebP, tối đa 5MB)</p>
       </div>
       <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-3">
         {(files || []).map((f, idx) => (

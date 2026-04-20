@@ -54,7 +54,7 @@ export default function ShippingInfoPage() {
 
         if (defaultAddress) {
           if (!shipAddress.trim()) {
-            const full = [defaultAddress.line1, defaultAddress.line2, defaultAddress.ward, defaultAddress.district]
+            const full = [defaultAddress.line1, defaultAddress.line2, defaultAddress.province]
               .filter(Boolean)
               .join(", ");
             setShipAddress(full);

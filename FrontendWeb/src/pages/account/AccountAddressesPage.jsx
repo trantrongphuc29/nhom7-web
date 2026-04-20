@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getJson, postJson, patchJson, deleteJson } from '../../services/apiClient';
 
 const emptyForm = {
-  recipientName: '', phone: '', line1: '', line2: '', ward: '', district: '', isDefault: false,
+  recipientName: '', phone: '', line1: '', isDefault: false,
 };
 
 const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#CCFF00]/80 focus:border-[#CCFF00]';
@@ -70,12 +70,23 @@ const load = useCallback(async () => {
 
   const openAddModal = () => {
     setEditingId(null);
-    setForm({
-      ...emptyForm,
-      recipientName: user?.fullName || user?.full_name || '',
-      phone: user?.phone || '',
-    });
+    const nameFromSession = (user?.fullName || user?.full_name || '').trim();
+    const phoneFromSession = (user?.phone || '').trim();
+    setForm({ ...emptyForm, recipientName: nameFromSession, phone: phoneFromSession });
     setModalOpen(true);
+    if (!token) return;
+    (async () => {
+      try {
+        const res = await getJson('/account/profile');
+        const p = res?.data ?? res;
+        if (!p || typeof p !== 'object') return;
+        const name = (p.full_name || p.fullName || nameFromSession || '').trim();
+        const phone = (p.phone || phoneFromSession || '').trim();
+        setForm((f) => ({ ...f, recipientName: name || f.recipientName, phone: phone || f.phone }));
+      } catch {
+        // Giữ giá trị từ session nếu không tải được hồ sơ
+      }
+    })();
   };
 
   const openEditModal = (row) => {
@@ -84,9 +95,6 @@ const load = useCallback(async () => {
       recipientName: row.recipient_name || row.recipientName || '',
       phone: row.phone || '',
       line1: row.line1 || '',
-      line2: row.line2 || '',
-      ward: row.ward || '',
-      district: row.district || '',
       isDefault: Boolean(row.is_default || row.isDefault),
     });
     setModalOpen(true);
@@ -119,7 +127,7 @@ const load = useCallback(async () => {
         recipient_name: form.recipientName.trim(),
         phone: form.phone.trim(),
         line1: form.line1.trim(),
-        province: "Hà Nội",
+        province: "TPHCM",
         is_default: form.isDefault
       };
 
@@ -176,7 +184,7 @@ const load = useCallback(async () => {
                 ) : null}
               </div>
               <p className="text-sm text-slate-700">
-                {[a.line1, a.line2, a.ward, a.district, a.province].filter(Boolean).join(', ')}
+                {[a.line1, a.province].filter(Boolean).join(', ')}
               </p>
               <div className="flex gap-2 pt-2">
                 <button type="button" onClick={() => openEditModal(a)} className="text-sm font-semibold text-slate-800 hover:text-black underline-offset-2 hover:underline">Sửa</button>

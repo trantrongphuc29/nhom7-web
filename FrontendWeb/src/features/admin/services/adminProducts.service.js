@@ -28,11 +28,14 @@ export async function bulkDeleteAdminProducts(payload, token) {
 
 export async function uploadAdminProductImages(files, token, productName = "") {
   const formData = new FormData();
-  files.forEach((file) => formData.append("images", file));
+  const list = Array.isArray(files) ? files.slice(0, 1) : files ? [files] : [];
+  list.forEach((file) => formData.append("images", file));
   if (productName) formData.append("productName", productName);
   const data = await requestJson(API_ENDPOINTS.ADMIN_UPLOAD_IMAGES, {
     method: "POST",
     body: formData,
   });
-  return data?.data?.records || [];
+  const records = data?.data?.records || [];
+  // Form sản phẩm gửi mảng URL (chuỗi); Cloudinary trả thêm public_id, width, height.
+  return records.map((r) => r?.url).filter(Boolean);
 }

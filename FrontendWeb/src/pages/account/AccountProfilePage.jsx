@@ -68,9 +68,10 @@ export default function AccountProfilePage() {
       // GỬI ĐÚNG BIẾN full_name XUỐNG CHO LARAVEL
         const response = await patchJson('/account/profile', { full_name: fullName.trim(), phone: phone.trim() });
       
-      // Cập nhật lại góc trái màn hình ngay lập tức
-      if (response.data?.data) {
-        const updatedUser = { ...response.data.data, fullName: response.data.data.full_name };
+      // API trả user trong `data` (không lồng `data.data`)
+      const updated = response?.data;
+      if (updated && typeof updated === 'object') {
+        const updatedUser = { ...updated, fullName: updated.full_name || updated.fullName || '' };
         setUser(updatedUser);
         localStorage.setItem('user_info', JSON.stringify(updatedUser));
       }
