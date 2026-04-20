@@ -15,6 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Render / Cloudflare: tin proxy để nhận HTTPS đúng (cookie Secure, session).
+        $middleware->trustProxies(at: '*');
+
         $middleware->api(prepend: [
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
