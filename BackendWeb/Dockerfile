@@ -32,7 +32,7 @@ COPY tidb-ca.pem ./tidb-ca.pem
 
 RUN composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction --no-scripts
 RUN rm -rf /var/www/html/node_modules
-RUN mkdir -p /var/www/html/storage/logs /var/www/html/bootstrap/cache
+RUN mkdir -p /var/www/html/storage/logs /var/www/html/bootstrap/cache /var/www/html/storage/framework/cache/data /var/www/html/storage/framework/sessions /var/www/html/storage/framework/views
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
@@ -46,4 +46,4 @@ COPY nginx.conf /etc/nginx/sites-available/default
 RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
 
 EXPOSE 80
-CMD ["sh", "-c", "php artisan optimize:clear || true; php-fpm -D; nginx -g 'daemon off;'"]
+CMD ["sh", "-c", "php-fpm -D; nginx -g 'daemon off;'"]
