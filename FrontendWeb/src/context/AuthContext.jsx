@@ -58,7 +58,7 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, onUnauthorized);
   }, [applySessionUser]);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     setIsLoading(true);
     try {
       const response = await postJson(API_ENDPOINTS.AUTH_LOGIN, { email, password }, { skipAuthHandling: true });
@@ -68,9 +68,9 @@ export function AuthProvider({ children }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [applySessionUser]);
 
-  const register = async (fullName, email, password, confirmPassword) => {
+  const register = useCallback(async (fullName, email, password, confirmPassword) => {
     setIsLoading(true);
     try {
       const response = await postJson(API_ENDPOINTS.AUTH_REGISTER, {
@@ -85,7 +85,7 @@ export function AuthProvider({ children }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [applySessionUser]);
 
   const logout = useCallback(async () => {
     try {
