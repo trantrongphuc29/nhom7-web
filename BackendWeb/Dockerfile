@@ -41,10 +41,13 @@ RUN php artisan storage:link --force || true
 ENV APP_ENV=production
 ENV APP_DEBUG=false
 
+# Generate application key if not set
+RUN php artisan key:generate --no-interaction --force
+
 # Cache configuration and routes
 RUN php artisan config:cache --no-interaction
 RUN php artisan route:cache --no-interaction
-RUN php artisan view:cache --no-interaction
+RUN php artisan view:cache --no-interaction || true
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 
 RUN sed -ri 's!DocumentRoot /var/www/html!DocumentRoot /var/www/html/public!g' /etc/apache2/sites-available/*.conf
