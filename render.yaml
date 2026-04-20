@@ -2,7 +2,7 @@ services:
   - type: web
     name: backend-php
     env: docker
-    dockerfilePath: BackendWeb/Dockerfile
+    rootDir: BackendWeb
     plan: starter
     envVars:
       - key: APP_ENV

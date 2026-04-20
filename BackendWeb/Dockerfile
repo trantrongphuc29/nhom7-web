@@ -3,9 +3,9 @@
 
 FROM node:20-bullseye-slim AS assets
 WORKDIR /app
-COPY BackendWeb/package.json BackendWeb/package-lock.json* ./
+COPY package.json package-lock.json* ./
 RUN npm install
-COPY BackendWeb .
+COPY . .
 RUN npm run build
 
 FROM php:8.3-apache
@@ -26,7 +26,7 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 RUN a2enmod rewrite
 
 WORKDIR /var/www/html
-COPY BackendWeb .
+COPY . .
 COPY --from=assets /app/public/build ./public/build
 
 RUN composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction --no-scripts
