@@ -40,12 +40,6 @@ RUN php artisan storage:link --force || true
 ENV APP_ENV=production
 ENV APP_DEBUG=false
 
-
-# Cache configuration and routes
-RUN php artisan config:cache --no-interaction
-RUN php artisan route:cache --no-interaction
-RUN php artisan view:cache --no-interaction || true
-
 # Configure nginx
 COPY nginx.conf /etc/nginx/sites-available/default
 RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
