@@ -28,13 +28,23 @@ RUN a2enmod rewrite
 WORKDIR /var/www/html
 COPY . .
 COPY --from=assets /app/public/build ./public/build
+COPY tidb-ca.pem ./tidb-ca.pem
 
 RUN composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction --no-scripts
 RUN rm -rf /var/www/html/node_modules
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Create storage link
+RUN php artisan storage:link --force || true
 
 ENV APP_ENV=production
 ENV APP_DEBUG=false
+
+# Cache configuration and routes
+RUN php artisan config:cache --no-interaction
+RUN php artisan route:cache --no-interaction
+RUN php artisan view:cache --no-interaction
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 
 RUN sed -ri 's!DocumentRoot /var/www/html!DocumentRoot /var/www/html/public!g' /etc/apache2/sites-available/*.conf

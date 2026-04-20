@@ -10,7 +10,27 @@ services:
       - key: APP_DEBUG
         value: "false"
       - key: APP_KEY
-        generateString: 32
+        value: base64:8Zu3W4F0DPJptUnxcg1tJLCJQYtxo+lL9fM0cGxwVhQ=
       - key: LOG_CHANNEL
         value: stack
+      - key: LOG_LEVEL
+        value: error
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        value: gateway01.ap-southeast-1.prod.alicloud.tidbcloud.com
+      - key: DB_PORT
+        value: "4000"
+      - key: DB_DATABASE
+        value: lapstore
+      - key: DB_USERNAME
+        value: 2yKUGXG9VbPqv6E.root
+      - key: DB_PASSWORD
+        value: 5hcSp4he9at0MSuV
+      - key: SESSION_DRIVER
+        value: file
+      - key: CACHE_STORE
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync
     autoDeploy: true
