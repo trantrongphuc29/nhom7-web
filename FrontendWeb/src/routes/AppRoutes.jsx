@@ -14,7 +14,7 @@ import LoginPage from "../pages/LoginPage";
 import OrderSuccessPage from "../pages/OrderSuccessPage";
 import RegisterPage from "../pages/RegisterPage";
 import ShippingInfoPage from "../pages/ShippingInfoPage";
-
+import AdminCustomersPage from '../features/admin/pages/AdminCustomersPage';
 export default function AppRoutes() {
   return (
     <Routes>
@@ -46,6 +46,7 @@ export default function AppRoutes() {
           </ProtectedRoute>
         )}
       />
+      <Route path="/admin/customers" element={<AdminCustomersPage />} />
     </Routes>
   );
 }
