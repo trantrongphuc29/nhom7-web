@@ -8,6 +8,7 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { getJson } from "../services/apiClient";
 import { createStorefrontOrder } from "../services/orders.service";
+import { API_ENDPOINTS } from "../config/api";
 import { fmtPrice } from "../utils/format";
 import { clearShippingDraft, loadShippingDraft, ORDER_SUCCESS_FLAG, ORDER_SUCCESS_ORDER_CODE, saveShippingDraft } from "../utils/checkoutFlow";
 
@@ -40,8 +41,8 @@ export default function ShippingInfoPage() {
     (async () => {
       try {
         const [profileResult, addressesResult] = await Promise.allSettled([
-          getJson("/account/profile", { skipAuthHandling: true }),
-          getJson("/account/addresses", { skipAuthHandling: true }),
+          getJson(API_ENDPOINTS.ACCOUNT_PROFILE, { skipAuthHandling: true }),
+          getJson(API_ENDPOINTS.ACCOUNT_ADDRESSES, { skipAuthHandling: true }),
         ]);
         if (cancelled) return;
         const profileRes = profileResult.status === "fulfilled" ? profileResult.value : {};

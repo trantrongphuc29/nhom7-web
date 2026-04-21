@@ -36,7 +36,8 @@ Route::prefix('v1')->group(function () {
     // Public Product Routes
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/{id}', [ProductController::class, 'show']);
-    Route::post('/orders', [OrderController::class, 'store'])->middleware('session.auth');
+    // Cho phép guest checkout; nếu có session thì controller tự gắn user_id.
+    Route::post('/orders', [OrderController::class, 'store']);
 
     // Admin Routes
     Route::prefix('admin')->middleware(['session.auth', 'role:admin,staff'])->group(function () {
