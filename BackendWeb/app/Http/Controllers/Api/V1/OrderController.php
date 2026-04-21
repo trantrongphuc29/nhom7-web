@@ -56,8 +56,6 @@ class OrderController extends Controller
                 'status' => 'pending',
                 'payment_method' => $payload['paymentMethod'],
                 'subtotal_amount' => 0,
-                'shipping_fee' => 0,
-                'discount_amount' => 0,
                 'total_amount' => 0,
                 'ship_recipient_name' => $shipping['shipName'],
                 'ship_phone' => $shipping['shipPhone'],
@@ -92,7 +90,6 @@ class OrderController extends Controller
                 ->where('id', $orderId)
                 ->update([
                     'subtotal_amount' => $subtotal,
-                    'shipping_fee' => 0,
                     'total_amount' => $subtotal,
                     'updated_at' => now(),
                 ]);
