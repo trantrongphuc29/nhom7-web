@@ -40,11 +40,17 @@ class AuthController extends Controller
         $email = $request->string('email')->lower()->value();
         $user = User::where('email', $email)->first();
 
-        // CHÚ Ý: Phải kiểm tra cột 'password_hash' thay vì 'password'
+        // 1. Kiểm tra Email và Mật khẩu
         if (!$user || !Hash::check($request->string('password')->value(), $user->password_hash)) {
             return ApiResponse::error('Invalid credentials', 401);
         }
 
+        // 2. KIỂM TRA TRẠNG THÁI TÀI KHOẢN (Thêm đoạn này vào)
+        if ($user->status === 'blocked') {
+            return ApiResponse::error('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin!', 403);
+        }
+
+        // 3. Nếu mọi thứ OK thì mới cho đăng nhập
         Auth::login($user);
         $request->session()->regenerate();
 
