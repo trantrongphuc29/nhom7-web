@@ -56,7 +56,9 @@ export async function requestJson(url, options = {}) {
   } catch (error) {
     const fetchLikeResponse = toFetchLikeResponse(error?.response);
     notifyUnauthorizedSession(fetchLikeResponse, options);
-    throw new Error(normalizeMessage(error));
+    const wrappedError = new Error(normalizeMessage(error));
+    wrappedError.status = error?.response?.status ?? 0;
+    throw wrappedError;
   }
 }
 

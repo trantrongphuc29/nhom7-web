@@ -5,9 +5,20 @@ import { AUTH_UNAUTHORIZED_EVENT } from '../utils/authSession';
 
 const AuthContext = createContext(null);
 
+function getCachedUser() {
+  try {
+    const raw = localStorage.getItem('user_info');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState('');
-  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(() => (getCachedUser() ? 'session' : ''));
+  const [user, setUser] = useState(() => getCachedUser());
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
 
@@ -30,11 +41,16 @@ export function AuthProvider({ children }) {
     try {
       const response = await getJson(API_ENDPOINTS.AUTH_ME, { skipAuthHandling: true });
       return applySessionUser(response?.data ?? response);
-    } catch {
-      applySessionUser(null);
-      return null;
+    } catch (error) {
+      const status = Number(error?.status || 0);
+      if (status === 401 || status === 419) {
+        applySessionUser(null);
+        return null;
+      }
+      // Giữ phiên hiện tại nếu backend/network lỗi tạm thời để tránh tự logout.
+      return user;
     }
-  }, [applySessionUser]);
+  }, [applySessionUser, user]);
 
   useEffect(() => {
     let mounted = true;
